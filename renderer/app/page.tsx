@@ -177,7 +177,7 @@ export default function Home() {
      */
     const fetchModels = async () => {
       try {
-        const data = await window.model.getModels()
+        const data = await window.llm.getModels()
         if (data.code === 200) {
           setModels(data.data.models)
         }

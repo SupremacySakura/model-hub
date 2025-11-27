@@ -30,7 +30,7 @@ export default function Models() {
         const fetchModels = async () => {
             try {
                 setLoading(true)
-                const data = await window.model.getModels()
+                const data = await window.llm.getModels()
                 if (data.code === 200) {
                     setModels(data.data.models)
                 }
@@ -63,7 +63,7 @@ export default function Models() {
         }
         try {
             setSubmitting(true)
-            const data = await window.model.addModel(newModel)
+            const data = await window.llm.addModel(newModel)
             if (data.code === 200) {
                 setModels((prev) => [...prev, data.data])
                 handleModalClose()

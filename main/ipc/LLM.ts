@@ -15,7 +15,11 @@ const llmHandler = {
 
     deleteSingleHitory: (sessionId: string) => ipcRenderer.invoke('delete-single-history', sessionId),
 
-    deleteAllHistories: () => ipcRenderer.invoke('delete-all-histories')
+    deleteAllHistories: () => ipcRenderer.invoke('delete-all-histories'),
+
+    getModels: () => ipcRenderer.invoke('get-models'),
+    
+    addModel: (model: unknown) => ipcRenderer.invoke('add-model', model),
 }
 
 contextBridge.exposeInMainWorld('llm', llmHandler)
