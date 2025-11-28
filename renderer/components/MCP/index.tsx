@@ -3,7 +3,7 @@
 import { Button, Empty, message, Spin, Tag } from "antd"
 import { useEffect, useState } from "react"
 import JsonConfigEditor from "../JsonConfigEditor"
-import { MCPItem } from "../../type/MCP"
+import { IMCPItem } from "../../type/MCP"
 
 export default function MCP() {
     // 是否编辑
@@ -15,7 +15,7 @@ export default function MCP() {
     // 是否保存中
     const [saving, setSaving] = useState<boolean>(false)
     // MCP 列表
-    const [mcps, setMcps] = useState<MCPItem[]>([])
+    const [mcps, setMcps] = useState<IMCPItem[]>([])
 
     /**
      * 获取MCP配置

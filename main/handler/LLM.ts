@@ -101,5 +101,10 @@ ipcMain.handle('update-mcp-config', async (event, config: string) => {
 // 解析MCP配置
 ipcMain.handle('load-mcp', async () => {
     const mcps = await loadMCP()
-    return { message: 'load config successfully', code: 200, data: mcps }
+    return {
+        message: 'load config successfully', code: 200, data: mcps.map((item) => {
+            const { client, ...rest } = item
+            return { ...rest }
+        })
+    }
 })

@@ -29,6 +29,8 @@ export default function Home() {
   const [sessionId, setSessionId] = useState<string>(crypto.randomUUID())
   // 聊天框dom
   const messagesRef = useRef<HTMLDivElement>(null)
+  // 是否已经渲染
+  const [isMounted, setIsMounted] = useState<boolean>(false)
 
   /**
    * 处理模型选择变更
@@ -122,11 +124,15 @@ export default function Home() {
    * @async
    * @returns {Promise<void>}
    */
-  const fetchHitories = async () => {
+  const fetchHitories = async (isInit?: boolean) => {
     try {
       const data = await window.llm.getAllHistories()
       if (data.code === 200) {
         setHistories(data.data)
+        if (isInit && data.data.length !== 0) {
+          setSessionId(data.data[0].sessionId)
+          setMessages(data.data[0].messages)
+        }
       }
     } catch (error) {
       console.error(error)
@@ -166,7 +172,8 @@ export default function Home() {
    * 监听大模型回复
    */
   useEffect(() => {
-    window.llm.onChunk((delta: string) => {
+    // 定义事件处理函数
+    const handleChunk = (delta: string) => {
       if (!currentAssistantId.current) return
       if (isLoding) {
         setIsLoding(false)
@@ -178,16 +185,16 @@ export default function Home() {
             : msg
         )
       )
-    })
+    }
 
-    window.llm.onEnd(() => {
+    const handleEnd = () => {
       setIsLoding(false)
       currentAssistantId.current = null
       // 每次完成都刷新历史记录
       fetchHitories()
-    })
+    }
 
-    window.llm.onError((err: string) => {
+    const handleError = (err: string) => {
       console.error("LLM Error:", err)
       setMessages(prev => [
         ...prev,
@@ -200,11 +207,26 @@ export default function Home() {
       ])
       currentAssistantId.current = null
       setIsLoding(false)
-    })
+    }
+
+    // 添加事件监听器，并获取清理函数
+    const removeChunkListener = window.llm.onChunk(handleChunk)
+    const removeEndListener = window.llm.onEnd(handleEnd)
+    const removeErrorListener = window.llm.onError(handleError)
+
+    // 清理函数：移除事件监听器
+    return () => {
+      // 移除所有事件监听器，避免重复监听
+      removeChunkListener()
+      removeEndListener()
+      removeErrorListener()
+    }
+
   }, [])
 
   // 初始化获取模型列表
   useEffect(() => {
+    setIsMounted(true)
     /**
      * 从主进程获取模型列表
      * 
@@ -225,7 +247,7 @@ export default function Home() {
     }
     fetchModels()
     setMessages([])
-    fetchHitories()
+    fetchHitories(true)
   }, [])
 
   useEffect(() => {
@@ -233,7 +255,7 @@ export default function Home() {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight
     }
   }, [messages])
-  
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {contextHolder}
@@ -319,7 +341,7 @@ export default function Home() {
                       }`}
                   >
                     <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {msg?.content || '新聊天'}
+                      {msg?.content}
                     </div>
                     <div
                       className={`text-xs mt-1 ${msg?.role === 'user' ? 'text-blue-100' : 'text-gray-400'

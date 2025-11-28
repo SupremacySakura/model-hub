@@ -8,13 +8,27 @@ const llmHandler = {
     start: (params: { apiKey: string, baseURL: string, messages: string, sessionId: string, model: string }) => ipcRenderer.invoke('llm:start', params),
 
     // 监听LLM流式输出
-    onChunk: (cb: (arg0: any) => void) => ipcRenderer.on('llm:chunk', (_event, delta) => cb(delta)),
+    onChunk: (cb: (arg0: any) => void) => {
+        const listener = (_event: Electron.IpcRendererEvent, delta: any) => cb(delta);
+        ipcRenderer.on('llm:chunk', listener);
+        // 返回清理函数，用于移除监听器
+        return () => ipcRenderer.removeListener('llm:chunk', listener);
+    },
 
     // 监听LLM流式调用结束
-    onEnd: (cb: (event: Electron.IpcRendererEvent, ...args: any[]) => void) => ipcRenderer.on('llm:end', cb),
+    onEnd: (cb: (event: Electron.IpcRendererEvent, ...args: any[]) => void) => {
+        ipcRenderer.on('llm:end', cb);
+        // 返回清理函数，用于移除监听器
+        return () => ipcRenderer.removeListener('llm:end', cb);
+    },
 
     // 监听LLM流式调用错误
-    onError: (cb: (arg0: any) => void) => ipcRenderer.on('llm:error', (_ev, err) => cb(err)),
+    onError: (cb: (arg0: any) => void) => {
+        const listener = (_event: Electron.IpcRendererEvent, err: any) => cb(err);
+        ipcRenderer.on('llm:error', listener);
+        // 返回清理函数，用于移除监听器
+        return () => ipcRenderer.removeListener('llm:error', listener);
+    },
 
     // 添加会话历史
     addHistory: (sessionId: string) => ipcRenderer.invoke('add-history', sessionId),

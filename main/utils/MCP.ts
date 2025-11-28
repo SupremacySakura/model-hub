@@ -3,7 +3,7 @@ import { StdioClientTransport, StdioServerParameters } from "@modelcontextprotoc
 import { app } from 'electron'
 import fs from 'fs'
 import path from 'path'
-import { MCPItem } from '../../renderer/type/MCP'
+import { IMCPItem } from '../../renderer/type/MCP'
 
 interface IMCPConfig {
     mcpServers: Record<string, StdioServerParameters>
@@ -84,11 +84,11 @@ export const updateMCPConfig = async (config: string) => {
  * 从配置中加载所有MCP服务器实例
  * 
  * @async
- * @returns {Promise<MCPItem[]>} 包含所有MCP服务器信息的数组
+ * @returns {Promise<IMCPItem[]>} 包含所有MCP服务器信息的数组
  * @throws {Error} 连接MCP服务器时可能抛出错误
  */
 export const loadMCP = async () => {
-    const mcps: MCPItem[] = []
+    const mcps: IMCPItem[] = []
     const json = await getMCPConfig()
     const config = JSON.parse(json) as IMCPConfig
     const mcpServers = config.mcpServers
@@ -101,10 +101,11 @@ export const loadMCP = async () => {
                 version: '1.0.0'
             })
             await cilent.connect(transport)
-            const newMcp: MCPItem = {
+            const newMcp: IMCPItem = {
                 id: name,
                 tools: [],
-                prompts: []
+                prompts: [],
+                client: cilent
             }
             const tools = await cilent.listTools()
             newMcp.tools = tools.tools
