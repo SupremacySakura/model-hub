@@ -150,7 +150,7 @@ export default function Models() {
     }
 
     return (
-        <div className="flex flex-col gap-6 p-6">
+        <div className="flex flex-col gap-6 p-6 h-full overflow-hidden">
             <section className="flex flex-col gap-4 bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <Input
@@ -178,7 +178,7 @@ export default function Models() {
                 </div>
             </section>
 
-            <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm min-h-[300px]">
+            <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm min-h-[300px] overflow-y-auto">
                 {loading ? (
                     <div className="flex h-48 items-center justify-center">
                         <Spin />

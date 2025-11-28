@@ -6,16 +6,16 @@ import { IModelItem } from '../../renderer/type/model'
 // LLM处理程序对象，包含所有LLM相关的IPC方法
 const llmHandler = {
     // 启动LLM流式调用
-    start: (params: { apiKey: string, baseURL: string, messages: string, sessionId: string, model: string }) => ipcRenderer.invoke("llm:start", params),
+    start: (params: { apiKey: string, baseURL: string, messages: string, sessionId: string, model: string }) => ipcRenderer.invoke('llm:start', params),
 
     // 监听LLM流式输出
-    onChunk: (cb: (arg0: any) => void) => ipcRenderer.on("llm:chunk", (_event, delta) => cb(delta)),
+    onChunk: (cb: (arg0: any) => void) => ipcRenderer.on('llm:chunk', (_event, delta) => cb(delta)),
 
     // 监听LLM流式调用结束
-    onEnd: (cb: (event: Electron.IpcRendererEvent, ...args: any[]) => void) => ipcRenderer.on("llm:end", cb),
+    onEnd: (cb: (event: Electron.IpcRendererEvent, ...args: any[]) => void) => ipcRenderer.on('llm:end', cb),
 
     // 监听LLM流式调用错误
-    onError: (cb: (arg0: any) => void) => ipcRenderer.on("llm:error", (_ev, err) => cb(err)),
+    onError: (cb: (arg0: any) => void) => ipcRenderer.on('llm:error', (_ev, err) => cb(err)),
 
     // 添加会话历史
     addHistory: (sessionId: string) => ipcRenderer.invoke('add-history', sessionId),
@@ -36,7 +36,16 @@ const llmHandler = {
     addModel: (model: IModelItem) => ipcRenderer.invoke('add-model', model),
 
     // 删除模型
-    deleteModel: (model: IModelItem) => ipcRenderer.invoke('delete-model', model)
+    deleteModel: (model: IModelItem) => ipcRenderer.invoke('delete-model', model),
+
+    // 获取MCP配置
+    getMCPConfig: () => ipcRenderer.invoke('get-mcp-config'),
+
+    // 更新MCP配置
+    updateMCPConfig: (config: string) => ipcRenderer.invoke('update-mcp-config', config),
+
+    // 解析MCP配置
+    loadMCPConfig: () => ipcRenderer.invoke('load-mcp')
 }
 
 // 将llmHandler暴露到全局window对象，供渲染进程使用

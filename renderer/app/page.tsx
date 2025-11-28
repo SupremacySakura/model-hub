@@ -255,7 +255,7 @@ export default function Home() {
       {/* 主内容区域 */}
       <section className="w-full flex flex-1 overflow-hidden">
         {/* 历史记录侧边栏 - 占据文档流 */}
-        <div className={`w-64 border-r border-gray-200 bg-white  ${showHistory ? 'w-64' : 'w-0'} duration-300 ease-in overflow-hidden`}>
+        <div className={`border-r border-gray-200 bg-white  ${showHistory ? 'w-64' : 'w-0'} duration-300 ease-in overflow-hidden`}>
           <div className="p-2 w-64 border-b border-gray-200">
             <Space>
               <Button onClick={handleNewChat}>新聊天</Button>

@@ -5,6 +5,7 @@ import type { MenuProps } from 'antd'
 import { Button, Menu } from 'antd'
 import Models from '../../components/Models'
 import Link from 'next/link'
+import MCP from '../../components/MCP'
 
 type MenuItem = Required<MenuProps>['items'][number]
 
@@ -38,7 +39,9 @@ const menuMap = {
     [MenuKey.Models]: {
         component: <Models></Models>
     },
-    [MenuKey.ToolsMcp]: {},
+    [MenuKey.ToolsMcp]: {
+        component: <MCP></MCP>
+    },
     [MenuKey.Rules]: {},
     [MenuKey.Indexing]: {},
     [MenuKey.Network]: {},
@@ -123,13 +126,15 @@ export default function Page() {
                 items={items}
                 onSelect={handleSelect}
             />
-            <main className='flex-1 overflow-y-auto'>
-                <div className='ml-2 mt-2'>
+            <main className='flex-1 overflow-hidden h-screen'>
+                <div className='ml-2 mt-2 mb-2'>
                     <Button>
                         <Link href={'/'}>返回聊天</Link>
                     </Button>
                 </div>
-                {menuMap[selectedKey]['component']}
+                <div className='h-[calc(100vh-40px)] overflow-hidden'>
+                    {menuMap[selectedKey]['component']}
+                </div>
             </main>
         </div>
     )

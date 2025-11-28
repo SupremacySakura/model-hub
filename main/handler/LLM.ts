@@ -3,6 +3,7 @@
 import { ipcMain } from 'electron'
 // 导入渲染进程的LLM工具函数
 import { addHistory, addModel, callLLM, deleteAllHistories, deleteModel, deleteSingleHistory, getAllHistories, getLLM, getModels } from '../utils/LLM'
+import { getMCPConfig, loadMCPConfig, updateMCPConfig } from '../utils/MCP'
 
 // 指定运行时环境
 export const runtime = 'nodejs'
@@ -10,17 +11,17 @@ export const runtime = 'nodejs'
 // 获取模型列表
 ipcMain.handle('get-models', async () => {
     const models = getModels()
-    return { message: "Models loaded successfully", data: models, code: 200 }
+    return { message: 'Models loaded successfully', data: models, code: 200 }
 })
 
 // 添加新模型
 ipcMain.handle('add-model', async (event, model) => {
     try {
         addModel(model);
-        return { message: "Model added successfully", code: 200, data: model };
+        return { message: 'Model added successfully', code: 200, data: model };
     } catch (err) {
         console.error(err);
-        return { message: "Model added error", code: 500 };
+        return { message: 'Model added error', code: 500 };
     }
 })
 
@@ -28,17 +29,17 @@ ipcMain.handle('add-model', async (event, model) => {
 ipcMain.handle('delete-model', async (event, model) => {
     try {
         deleteModel(model);
-        return { message: "Model deleted successfully", code: 200, data: model };
+        return { message: 'Model deleted successfully', code: 200, data: model };
     } catch (err) {
         console.error(err);
-        return { message: "Model deleted error", code: 500 };
+        return { message: 'Model deleted error', code: 500 };
     }
 })
 
 // 添加会话历史
 ipcMain.handle('add-history', async (event, sessionId: string) => {
     addHistory(sessionId)
-    return { message: "History Add successfully", data: sessionId, code: 200 }
+    return { message: 'History Add successfully', data: sessionId, code: 200 }
 })
 
 // 启动LLM流式调用
@@ -55,15 +56,15 @@ ipcMain.handle('llm:start', async (event, { apiKey, baseURL, messages, sessionId
             sessionId,
             // 流式数据回调，将结果发送回渲染进程
             (delta: string) => {
-                event.sender.send("llm:chunk", delta); // 发送流式chunk
+                event.sender.send('llm:chunk', delta); // 发送流式chunk
             }
         ).then(() => {
             // 流式调用结束
-            event.sender.send("llm:end");
+            event.sender.send('llm:end');
         }).catch((err) => {
             // 处理错误
             console.error(err);
-            event.sender.send("llm:error", err.message || "LLM error");
+            event.sender.send('llm:error', err.message || 'LLM error');
         });
 
         // handle必须立即返回（不能挂起等待流结束）
@@ -78,17 +79,35 @@ ipcMain.handle('llm:start', async (event, { apiKey, baseURL, messages, sessionId
 // 获取所有会话历史
 ipcMain.handle('get-histories', async () => {
     const histories = getAllHistories()
-    return { message: "Histories loaded successfully", data: histories, code: 200 }
+    return { message: 'Histories loaded successfully', data: histories, code: 200 }
 })
 
 // 删除单个会话历史
 ipcMain.handle('delete-single-history', async (event, sessionId) => {
     deleteSingleHistory(sessionId)
-    return { message: "History delete successfully", data: sessionId, code: 200 }
+    return { message: 'History delete successfully', data: sessionId, code: 200 }
 })
 
 // 删除所有会话历史
 ipcMain.handle('delete-all-histories', async () => {
     deleteAllHistories()
     return { message: 'All histories delete successfully', code: 200 }
+})
+
+// 获取MCP配置
+ipcMain.handle('get-mcp-config', async () => {
+    const json = await getMCPConfig()
+    return { message: 'Get config successfully', code: 200, data: json }
+})
+
+// 更新MCP配置
+ipcMain.handle('update-mcp-config', async (event, config: string) => {
+    await updateMCPConfig(config)
+    return { message: 'Update config successfully', code: 200 }
+})
+
+// 解析MCP配置
+ipcMain.handle('load-mcp', async () => {
+    const mcps = await loadMCPConfig()
+    return { message: 'load config successfully', code: 200, data: mcps }
 })
