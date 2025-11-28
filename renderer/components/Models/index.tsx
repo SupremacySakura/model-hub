@@ -1,13 +1,19 @@
 'use client'
+
 import { Button, Input, Modal, Spin } from "antd"
 import { useEffect, useMemo, useState } from "react"
 import { IModelItem } from "../../type/model"
 
 export default function Models() {
+    // 模型列表
     const [models, setModels] = useState<IModelItem[]>([])
+    // 添加弹窗
     const [isModalOpen, setIsModalOpen] = useState(false)
+    // 是否在加载中
     const [loading, setLoading] = useState(false)
+    // 搜索框
     const [search, setSearch] = useState('')
+    // 添加模型
     const [newModel, setNewModel] = useState<IModelItem>({
         id: '',
         name: '',
@@ -15,8 +21,36 @@ export default function Models() {
         apiKey: '',
         baseURL: '',
     })
+    // 是否正在提交
     const [submitting, setSubmitting] = useState(false)
 
+    /**
+     * 从主进程获取模型列表
+     * 
+     * 通过IPC调用获取所有可用的模型列表，并更新模型状态
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
+    const fetchModels = async () => {
+        try {
+            setLoading(true)
+            const data = await window.llm.getModels()
+            if (data.code === 200) {
+                setModels(data.data.models)
+            }
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    /**
+     * 根据搜索关键词过滤模型列表
+     * 
+     * 使用useMemo缓存过滤结果，仅当models或search变化时重新计算
+     * 
+     * @returns {IModelItem[]} 过滤后的模型列表
+     */
     const filteredModels = useMemo(() => {
         if (!search.trim()) return models
         return models.filter((model) =>
@@ -26,22 +60,27 @@ export default function Models() {
         )
     }, [models, search])
 
+    // 初始化
     useEffect(() => {
-        const fetchModels = async () => {
-            try {
-                setLoading(true)
-                const data = await window.llm.getModels()
-                if (data.code === 200) {
-                    setModels(data.data.models)
-                }
-            } finally {
-                setLoading(false)
-            }
-        }
         fetchModels()
     }, [])
 
+    /**
+     * 打开添加模型模态框
+     * 
+     * 设置isModalOpen为true，显示添加模型的模态对话框
+     * 
+     * @returns {void}
+     */
     const handleModalOpen = () => setIsModalOpen(true)
+
+    /**
+     * 关闭添加模型模态框
+     * 
+     * 设置isModalOpen为false，隐藏添加模型的模态对话框，并重置新模型的状态
+     * 
+     * @returns {void}
+     */
     const handleModalClose = () => {
         setIsModalOpen(false)
         setNewModel({
@@ -53,10 +92,27 @@ export default function Models() {
         })
     }
 
+    /**
+     * 更新新模型的属性值
+     * 
+     * 根据指定的键和值更新新模型对象的对应属性
+     * 
+     * @param {keyof IModelItem} key - 要更新的模型属性键
+     * @param {string} value - 要设置的属性值
+     * @returns {void}
+     */
     const handleChange = (key: keyof IModelItem, value: string) => {
         setNewModel((prev) => ({ ...prev, [key]: value }))
     }
 
+    /**
+     * 添加新模型
+     * 
+     * 验证新模型的必填字段，然后通过IPC调用将新模型添加到持久化存储中
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
     const handleAddModel = async () => {
         if (!newModel.id || !newModel.name) {
             return
@@ -70,6 +126,26 @@ export default function Models() {
             }
         } finally {
             setSubmitting(false)
+        }
+    }
+
+    /**
+     * 删除指定模型
+     * 
+     * 通过IPC调用删除指定的模型，并重新获取模型列表以更新界面
+     * 
+     * @async
+     * @param {IModelItem} model - 要删除的模型对象
+     * @returns {Promise<void>}
+     */
+    const handleDeleteModel = async (model: IModelItem) => {
+        try {
+            const data = await window.llm.deleteModel(model)
+            if (data.code === 200) {
+                fetchModels()
+            }
+        } catch (error) {
+            console.error(error)
         }
     }
 
@@ -126,6 +202,10 @@ export default function Models() {
                                 <div className="text-sm text-gray-500 truncate">
                                     Base URL：{item.baseURL || '未设置'}
                                 </div>
+                                <Button danger onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDeleteModel(item)
+                                }}>删除</Button>
                             </li>
                         ))}
                     </ul>

@@ -1,4 +1,5 @@
 'use client'
+
 import React, { useState } from 'react'
 import type { MenuProps } from 'antd'
 import { Button, Menu } from 'antd'
@@ -7,6 +8,11 @@ import Link from 'next/link'
 
 type MenuItem = Required<MenuProps>['items'][number]
 
+/**
+ * 设置页面菜单键枚举
+ * 
+ * 定义设置页面左侧菜单的所有选项键
+ */
 enum MenuKey {
     General = 'General',
     Agents = 'Agents',
@@ -20,6 +26,11 @@ enum MenuKey {
     Docs = 'Docs',
 }
 
+/**
+ * 菜单映射对象
+ * 
+ * 定义每个菜单项对应的组件和配置
+ */
 const menuMap = {
     [MenuKey.General]: {},
     [MenuKey.Agents]: {},
@@ -35,6 +46,11 @@ const menuMap = {
     [MenuKey.Docs]: {}
 }
 
+/**
+ * 菜单配置项数组
+ * 
+ * 定义左侧菜单的结构和分组
+ */
 const items: MenuItem[] = [
     {
         key: 'sub1',
@@ -80,8 +96,19 @@ const items: MenuItem[] = [
         ],
     },
 ]
+
 export default function Page() {
     const [selectedKey, setSelectedKey] = useState<MenuKey>(MenuKey.General)
+
+    /**
+     * 处理菜单选择事件
+     * 
+     * 当用户选择左侧菜单时，更新选中的菜单项
+     * 
+     * @param {Object} param - 菜单选择事件参数
+     * @param {string} param.key - 选中的菜单键
+     * @returns {void}
+     */
     const handleSelect: MenuProps['onSelect'] = ({ key }) => {
         setSelectedKey(key as MenuKey)
     }
