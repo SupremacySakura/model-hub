@@ -1,5 +1,6 @@
-import React from "react";
-import Editor from "@monaco-editor/react";
+'use client'
+import React from "react"
+import Editor from "@monaco-editor/react"
 
 interface JsonConfigEditorProps {
     value: string;
@@ -19,6 +20,7 @@ export default function JsonConfigEditor({ value, onChange }: JsonConfigEditorPr
             <Editor
                 height="60vh"
                 defaultLanguage="json"
+                language="json"
                 value={value}
                 onChange={handleChange}
                 options={{

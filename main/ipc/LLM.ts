@@ -1,7 +1,6 @@
 // LLM相关的IPC渲染进程桥接
 // 使用contextBridge安全地暴露LLM API给渲染进程
 import { contextBridge, ipcRenderer } from 'electron'
-import { IModelItem } from '../../renderer/type/model'
 
 // LLM处理程序对象，包含所有LLM相关的IPC方法
 const llmHandler = {
@@ -32,11 +31,11 @@ const llmHandler = {
     // 获取模型列表
     getModels: () => ipcRenderer.invoke('get-models'),
 
-    // 添加新模型
-    addModel: (model: IModelItem) => ipcRenderer.invoke('add-model', model),
+    // 更新模型列表
+    updateModels: (config: string) => ipcRenderer.invoke('update-models', config),
 
-    // 删除模型
-    deleteModel: (model: IModelItem) => ipcRenderer.invoke('delete-model', model),
+    // 加载模型列表
+    loadModels: () => ipcRenderer.invoke('load-models'),
 
     // 获取MCP配置
     getMCPConfig: () => ipcRenderer.invoke('get-mcp-config'),

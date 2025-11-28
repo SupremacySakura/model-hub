@@ -3,16 +3,29 @@
 import { Button, Empty, message, Spin, Tag } from "antd"
 import { useEffect, useState } from "react"
 import JsonConfigEditor from "../JsonConfigEditor"
-import { MCPItem } from "../../type/mcp"
+import { MCPItem } from "../../type/MCP"
 
 export default function MCP() {
-
+    // 是否编辑
     const [isEdit, setIsEdit] = useState<boolean>(false)
+    // MCP 配置
     const [config, setConfig] = useState<string>("")
+    // 是否加载中
     const [loading, setLoading] = useState<boolean>(false)
+    // 是否保存中
     const [saving, setSaving] = useState<boolean>(false)
+    // MCP 列表
     const [mcps, setMcps] = useState<MCPItem[]>([])
-    const fetchConfig = async () => {
+
+    /**
+     * 获取MCP配置
+     * 
+     * 通过IPC调用从主进程获取MCP配置，并更新状态
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
+    const fetchMCPConfig = async () => {
         try {
             setLoading(true)
             const data = await window.llm.getMCPConfig()
@@ -24,6 +37,14 @@ export default function MCP() {
         }
     }
 
+    /**
+     * 保存MCP配置
+     * 
+     * 通过IPC调用保存MCP配置，并更新状态和MCP列表
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
     const handleSave = async () => {
         try {
             setSaving(true)
@@ -31,7 +52,7 @@ export default function MCP() {
             if (data.code === 200) {
                 message.success("配置已保存")
                 setIsEdit(false)
-                fetchConfig()
+                fetchMCPConfig()
                 loadConfig()
             } else {
                 message.error(data.message || "保存失败")
@@ -43,15 +64,23 @@ export default function MCP() {
         }
     }
 
+    /**
+     * 加载MCP配置列表
+     * 
+     * 通过IPC调用从主进程加载MCP配置列表，并更新状态
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
     const loadConfig = async () => {
         const data = await window.llm.loadMCPConfig()
         if (data.code === 200) {
-            console.log(data.data)
             setMcps(data.data)
         }
     }
+
     useEffect(() => {
-        fetchConfig()
+        fetchMCPConfig()
         loadConfig()
     }, [])
 

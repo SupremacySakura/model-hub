@@ -2,38 +2,30 @@
 // 负责处理渲染进程发送的LLM相关请求
 import { ipcMain } from 'electron'
 // 导入渲染进程的LLM工具函数
-import { addHistory, addModel, callLLM, deleteAllHistories, deleteModel, deleteSingleHistory, getAllHistories, getLLM, getModels } from '../utils/LLM'
-import { getMCPConfig, loadMCPConfig, updateMCPConfig } from '../utils/MCP'
+import { addHistory, callLLM, getLLM } from '../utils/LLM'
+import { getMCPConfig, loadMCP, updateMCPConfig } from '../utils/MCP'
+import { getModelConifg, loadModels, updateModelConfig } from '../utils/models'
+import { deleteAllHistories, deleteSingleHistory, getAllHistories } from '../utils/history'
 
 // 指定运行时环境
 export const runtime = 'nodejs'
 
 // 获取模型列表
 ipcMain.handle('get-models', async () => {
-    const models = getModels()
+    const models = getModelConifg()
     return { message: 'Models loaded successfully', data: models, code: 200 }
 })
 
-// 添加新模型
-ipcMain.handle('add-model', async (event, model) => {
-    try {
-        addModel(model);
-        return { message: 'Model added successfully', code: 200, data: model };
-    } catch (err) {
-        console.error(err);
-        return { message: 'Model added error', code: 500 };
-    }
+// 更新模型列表
+ipcMain.handle('update-models', async (event, config: string) => {
+    await updateModelConfig(config)
+    return { message: 'Models updated successfully', code: 200 }
 })
 
-// 删除模型
-ipcMain.handle('delete-model', async (event, model) => {
-    try {
-        deleteModel(model);
-        return { message: 'Model deleted successfully', code: 200, data: model };
-    } catch (err) {
-        console.error(err);
-        return { message: 'Model deleted error', code: 500 };
-    }
+// 加载模型列表
+ipcMain.handle('load-models', async () => {
+    const models = loadModels()
+    return { message: 'Models loaded successfully', data: models, code: 200 }
 })
 
 // 添加会话历史
@@ -108,6 +100,6 @@ ipcMain.handle('update-mcp-config', async (event, config: string) => {
 
 // 解析MCP配置
 ipcMain.handle('load-mcp', async () => {
-    const mcps = await loadMCPConfig()
+    const mcps = await loadMCP()
     return { message: 'load config successfully', code: 200, data: mcps }
 })

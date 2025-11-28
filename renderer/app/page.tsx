@@ -110,7 +110,6 @@ export default function Home() {
     setSessionId(newSessionId)
       ; (async () => {
         const data = await window.llm.addHistory(newSessionId)
-        console.log(data)
       })()
     fetchHitories()
   }
@@ -216,9 +215,9 @@ export default function Home() {
      */
     const fetchModels = async () => {
       try {
-        const data = await window.llm.getModels()
+        const data = await window.llm.loadModels()
         if (data.code === 200) {
-          setModels(data.data.models)
+          setModels(data.data)
         }
       } catch (error) {
         console.error('Error fetching models:', error)

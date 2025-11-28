@@ -1,29 +1,24 @@
 'use client'
 
-import { Button, Input, Modal, Spin } from "antd"
+import { Button, Input, message, Spin } from "antd"
 import { useEffect, useMemo, useState } from "react"
 import { IModelItem } from "../../type/model"
+import JsonConfigEditor from "../JsonConfigEditor"
+
 
 export default function Models() {
     // 模型列表
     const [models, setModels] = useState<IModelItem[]>([])
-    // 添加弹窗
-    const [isModalOpen, setIsModalOpen] = useState(false)
+    // 模型配置
+    const [modelConfig, setModelConfig] = useState<string>('')
     // 是否在加载中
     const [loading, setLoading] = useState(false)
     // 搜索框
     const [search, setSearch] = useState('')
-    // 添加模型
-    const [newModel, setNewModel] = useState<IModelItem>({
-        id: '',
-        name: '',
-        provider: '',
-        apiKey: '',
-        baseURL: '',
-    })
-    // 是否正在提交
-    const [submitting, setSubmitting] = useState(false)
-
+    // 是否编辑
+    const [isEdit, setIsEdit] = useState(false)
+    // 是否在保存中
+    const [saving, setSaving] = useState<boolean>(false)
     /**
      * 从主进程获取模型列表
      * 
@@ -32,15 +27,33 @@ export default function Models() {
      * @async
      * @returns {Promise<void>}
      */
-    const fetchModels = async () => {
+    const loadModels = async () => {
         try {
             setLoading(true)
-            const data = await window.llm.getModels()
+            const data = await window.llm.loadModels()
             if (data.code === 200) {
-                setModels(data.data.models)
+                setModels(data.data)
             }
         } finally {
             setLoading(false)
+        }
+    }
+
+    /**
+     * 从主进程获取模型配置
+     * 
+     * 通过IPC调用获取模型配置，并确保配置为字符串类型
+     * 
+     * @async
+     * @returns {Promise<void>}
+     */
+    const fetchModelsConfig = async () => {
+        try {
+            const data = await window.llm.getModels()
+            if (data.code === 200) {
+                setModelConfig(typeof data.data === 'string' ? data.data : JSON.stringify(data.data, null, 2))
+            }
+        } finally {
         }
     }
 
@@ -60,194 +73,137 @@ export default function Models() {
         )
     }, [models, search])
 
-    // 初始化
-    useEffect(() => {
-        fetchModels()
-    }, [])
-
     /**
-     * 打开添加模型模态框
+     * 进入编辑模式
      * 
-     * 设置isModalOpen为true，显示添加模型的模态对话框
+     * 设置isEdit状态为true，切换到配置编辑界面
      * 
      * @returns {void}
      */
-    const handleModalOpen = () => setIsModalOpen(true)
-
-    /**
-     * 关闭添加模型模态框
-     * 
-     * 设置isModalOpen为false，隐藏添加模型的模态对话框，并重置新模型的状态
-     * 
-     * @returns {void}
-     */
-    const handleModalClose = () => {
-        setIsModalOpen(false)
-        setNewModel({
-            id: '',
-            name: '',
-            provider: '',
-            apiKey: '',
-            baseURL: '',
-        })
+    const handleEditConfig = () => {
+        setIsEdit(true)
     }
 
     /**
-     * 更新新模型的属性值
+     * 保存模型配置
      * 
-     * 根据指定的键和值更新新模型对象的对应属性
-     * 
-     * @param {keyof IModelItem} key - 要更新的模型属性键
-     * @param {string} value - 要设置的属性值
-     * @returns {void}
-     */
-    const handleChange = (key: keyof IModelItem, value: string) => {
-        setNewModel((prev) => ({ ...prev, [key]: value }))
-    }
-
-    /**
-     * 添加新模型
-     * 
-     * 验证新模型的必填字段，然后通过IPC调用将新模型添加到持久化存储中
+     * 通过IPC调用保存模型配置，并更新模型列表和配置
      * 
      * @async
      * @returns {Promise<void>}
      */
-    const handleAddModel = async () => {
-        if (!newModel.id || !newModel.name) {
-            return
-        }
+    const handleSave = async () => {
         try {
-            setSubmitting(true)
-            const data = await window.llm.addModel(newModel)
+            setSaving(true)
+            const data = await window.llm.updateModels(modelConfig)
             if (data.code === 200) {
-                setModels((prev) => [...prev, data.data])
-                handleModalClose()
-            }
-        } finally {
-            setSubmitting(false)
-        }
-    }
-
-    /**
-     * 删除指定模型
-     * 
-     * 通过IPC调用删除指定的模型，并重新获取模型列表以更新界面
-     * 
-     * @async
-     * @param {IModelItem} model - 要删除的模型对象
-     * @returns {Promise<void>}
-     */
-    const handleDeleteModel = async (model: IModelItem) => {
-        try {
-            const data = await window.llm.deleteModel(model)
-            if (data.code === 200) {
-                fetchModels()
+                message.success("配置已保存")
+                setIsEdit(false)
+                fetchModelsConfig()
+                loadModels()
+            } else {
+                message.error(data.message || "保存失败")
             }
         } catch (error) {
-            console.error(error)
+            console.error("保存配置失败:", error)
+            message.error("保存失败")
+        } finally {
+            setSaving(false)
         }
     }
 
+    // 初始化
+    useEffect(() => {
+        loadModels()
+        fetchModelsConfig()
+    }, [])
+
     return (
-        <div className="flex flex-col gap-6 p-6 h-full overflow-hidden">
-            <section className="flex flex-col gap-4 bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <Input
-                        placeholder="搜索模型名称或提供商"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="flex-1"
-                        allowClear
-                    />
-                    <Button
-                        type="primary"
-                        className="bg-blue-500 hover:bg-blue-600"
-                        onClick={() => setSearch((prev) => prev.trim())}
-                    >
-                        搜索
-                    </Button>
-                </div>
-                <div className="flex justify-between items-center">
-                    <div className="text-sm text-gray-500">
-                        共 {filteredModels.length} 个模型
+        <div className="h-full bg-gray-50 p-6 overflow-hidden">
+            {isEdit ? (
+                <section className="mx-auto max-w-4xl bg-white rounded-2xl border border-gray-200 shadow-lg p-6 space-y-5">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                            <div className="text-xs uppercase tracking-wide text-blue-500">编辑模式</div>
+                            <h3 className="text-xl font-semibold text-gray-900 mt-1">JSON 配置</h3>
+                            <p className="text-sm text-gray-500">仅在确认内容正确后再保存</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button onClick={() => setIsEdit(false)}>取消</Button>
+                            <Button type="primary" loading={saving} onClick={handleSave}>
+                                保存配置
+                            </Button>
+                        </div>
                     </div>
-                    <Button type="primary" onClick={handleModalOpen}>
-                        添加模型
-                    </Button>
-                </div>
-            </section>
-
-            <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm min-h-[300px] overflow-y-auto">
-                {loading ? (
-                    <div className="flex h-48 items-center justify-center">
-                        <Spin />
+                    <div className="rounded-xl border border-gray-100 overflow-hidden bg-gray-900/95">
+                        <JsonConfigEditor value={modelConfig} onChange={setModelConfig} />
                     </div>
-                ) : filteredModels.length === 0 ? (
-                    <div className="text-center text-gray-400 py-16">
-                        暂无模型，点击右上角添加
-                    </div>
-                ) : (
-                    <ul className="grid gap-4 md:grid-cols-2">
-                        {filteredModels.map((item) => (
-                            <li
-                                key={item.id}
-                                className="flex flex-col gap-2 p-4 border border-gray-100 rounded-lg hover:border-blue-200 transition-colors"
-                            >
-                                <div className="flex justify-between items-start">
-                                    <div className="text-base font-medium text-gray-900">{item.name}</div>
-                                    <span className="text-xs text-gray-400">ID: {item.id}</span>
-                                </div>
-                                <div className="text-sm text-gray-600">提供商：{item.provider || '-'}</div>
-                                <div className="text-sm text-gray-500 truncate">
-                                    Base URL：{item.baseURL || '未设置'}
-                                </div>
-                                <Button danger onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleDeleteModel(item)
-                                }}>删除</Button>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </section>
-
-            <Modal
-                title="添加模型"
-                open={isModalOpen}
-                onCancel={handleModalClose}
-                footer={null}
-                centered
-            >
-                <div className="space-y-4">
-                    <div>
-                        <div className="text-sm text-gray-600 mb-1">ID</div>
-                        <Input value={newModel.id} onChange={(e) => handleChange('id', e.target.value)} />
-                    </div>
-                    <div>
-                        <div className="text-sm text-gray-600 mb-1">名称</div>
-                        <Input value={newModel.name} onChange={(e) => handleChange('name', e.target.value)} />
-                    </div>
-                    <div>
-                        <div className="text-sm text-gray-600 mb-1">提供商</div>
-                        <Input value={newModel.provider} onChange={(e) => handleChange('provider', e.target.value)} />
-                    </div>
-                    <div>
-                        <div className="text-sm text-gray-600 mb-1">API Key</div>
-                        <Input.Password value={newModel.apiKey} onChange={(e) => handleChange('apiKey', e.target.value)} />
-                    </div>
-                    <div>
-                        <div className="text-sm text-gray-600 mb-1">Base URL</div>
-                        <Input value={newModel.baseURL} onChange={(e) => handleChange('baseURL', e.target.value)} />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                        <Button onClick={handleModalClose}>取消</Button>
-                        <Button type="primary" loading={submitting} onClick={handleAddModel}>
-                            添加
+                </section>
+            ) : (
+                <section className="mx-auto max-w-5xl bg-white rounded-2xl border border-gray-200 shadow-lg p-6 space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <div className="text-xs uppercase tracking-wide text-blue-500">模型管理</div>
+                            <h2 className="text-2xl font-semibold text-gray-900 mt-1">模型列表</h2>
+                            <p className="text-sm text-gray-500">管理你已配置的所有模型</p>
+                        </div>
+                        <Button type="primary" size="large" onClick={handleEditConfig}>
+                            编辑配置
                         </Button>
                     </div>
-                </div>
-            </Modal>
+
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <Input
+                            placeholder="搜索模型名称或提供商"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="flex-1"
+                            allowClear
+                        />
+                        <Button
+                            type="primary"
+                            className="bg-blue-500 hover:bg-blue-600"
+                            onClick={() => setSearch((prev) => prev.trim())}
+                        >
+                            搜索
+                        </Button>
+                    </div>
+
+                    <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex items-center justify-between text-sm text-gray-500">
+                        <span>共 {filteredModels.length} 个模型</span>
+                    </div>
+
+                    <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 h-40 overflow-y-auto p-4">
+                        {loading ? (
+                            <div className="flex h-48 items-center justify-center">
+                                <Spin />
+                            </div>
+                        ) : filteredModels.length === 0 ? (
+                            <div className="text-center text-gray-400 py-16">
+                                暂无模型，点击右上角添加
+                            </div>
+                        ) : (
+                            <ul className="grid gap-4 md:grid-cols-2">
+                                {filteredModels.map((item) => (
+                                    <li
+                                        key={item.id}
+                                        className="flex flex-col gap-2 p-4 border border-gray-100 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow"
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div className="text-base font-medium text-gray-900">{item.name}</div>
+                                            <span className="text-xs text-gray-400">ID: {item.id}</span>
+                                        </div>
+                                        <div className="text-sm text-gray-600">提供商：{item.provider || '-'}</div>
+                                        <div className="text-sm text-gray-500 truncate">
+                                            Base URL：{item.baseURL || '未设置'}
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </section>
+            )}
         </div>
     )
 }
