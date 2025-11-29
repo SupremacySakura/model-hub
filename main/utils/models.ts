@@ -1,78 +1,92 @@
 import fs from 'fs'
 import path from 'path'
-import { IModelItem } from '../../renderer/type/model'
 import { app } from 'electron'
+import { IModelItem } from '../../renderer/type/model'
 
-/**
- * 获取模型列表
- * 
- * 从持久化存储中读取模型配置，若文件不存在则初始化空模型列表
- * 
- * @returns {string} 包含模型列表的JSON字符串，格式为 { models: IModelItem[] }
- * @throws {Error} 读取或解析文件时可能抛出错误
- */
-export const getModelConifg = () => {
-    // 获取持久化存储路径
-    const userDataPath = app.getPath("userData")
-    const configDir = path.join(userDataPath, "config")
+interface IModelConfig {
+    models: IModelItem[]
+}
 
-    // 确保目录存在
-    if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true })
+class ModelConfigManager {
+    private static instance: ModelConfigManager
+    private configPath: string
+    private config: IModelConfig = { models: [] }
+    private dirty = true
+
+    /** 单例入口 */
+    public static getInstance() {
+        if (!ModelConfigManager.instance) {
+            ModelConfigManager.instance = new ModelConfigManager()
+        }
+        return ModelConfigManager.instance
     }
 
-    const filePath = path.join(configDir, "models.json")
-    const initModels = JSON.stringify({ models: [] }, null, 2)
+    /** 私有构造（外部无法 new） */
+    private constructor() {
+        const userDataPath = app.getPath('userData')
+        const configDir = path.join(userDataPath, 'config')
 
-    try {
-        // 不存在则初始化
-        if (!fs.existsSync(filePath)) {
-            fs.writeFileSync(filePath, initModels, "utf-8")
-            return initModels
+        if (!fs.existsSync(configDir)) {
+            fs.mkdirSync(configDir, { recursive: true })
         }
 
-        // 读取 JSON
-        const json = fs.readFileSync(filePath, "utf-8")
-        return json
-
-    } catch (error) {
-        console.error("Error reading models.json:", error)
-        return initModels
+        this.configPath = path.join(configDir, 'models.json')
+        this.loadConfig()
     }
-}
 
-/**
- * 更新模型列表
- * 
- * 将解析后的模型配置写入持久化存储，若文件不存在则初始化
- * 
- * @param {string} config - 包含模型列表的JSON字符串，格式为 { models: IModelItem[] }
- * @returns {void}
- * @throws {Error} 解析或写入文件时可能抛出错误
- */
-export const updateModelConfig = (config: string) => {
-    try {
-        const models = JSON.parse(config)
-        if (!Array.isArray(models.models)) {
-            models.models = []
+    /** --- 配置管理 --- */
+    private loadConfig() {
+        if (!fs.existsSync(this.configPath)) {
+            this.saveConfig()
+            return
         }
-        const userDataPath = app.getPath("userData")
-        const configDir = path.join(userDataPath, "config")
-        const filePath = path.join(configDir, "models.json")
-        fs.writeFileSync(filePath, JSON.stringify(models, null, 2), "utf-8")
-    } catch (error) {
-        console.error("Error updating models.json:", error)
+        try {
+            const json = fs.readFileSync(this.configPath, 'utf-8')
+            const data = JSON.parse(json)
+            this.config.models = Array.isArray(data.models) ? data.models : []
+        } catch (err) {
+            console.error('Error reading models.json:', err)
+            this.config.models = []
+        }
+    }
+
+    private saveConfig() {
+        try {
+            fs.writeFileSync(
+                this.configPath,
+                JSON.stringify(this.config, null, 2),
+                'utf-8'
+            )
+        } catch (err) {
+            console.error('Error writing models.json:', err)
+        }
+    }
+
+    /** 更新配置 JSON 字符串 */
+    public updateConfig(newConfig: string) {
+        try {
+            const parsed = JSON.parse(newConfig)
+            this.config.models = Array.isArray(parsed.models) ? parsed.models : []
+            this.saveConfig()
+            this.dirty = true
+        } catch (err) {
+            console.error('Error updating models.json:', err)
+        }
+    }
+
+    /** 获取配置 JSON 字符串 */
+    public getConfig() {
+        return JSON.stringify(this.config, null, 2)
+    }
+
+    /** 加载模型数组 */
+    public loadModels(): IModelItem[] {
+        if (!this.dirty) return this.config.models
+        this.loadConfig()
+        this.dirty = false
+        return this.config.models
     }
 }
 
-/**
- * 加载模型列表
- * 
- * 从持久化存储中读取模型配置，若文件不存在则初始化空模型列表
- * 
- * @returns {IModelItem[]} 模型项数组
- */
-export const loadModels = (): IModelItem[] => {
-    const models = getModelConifg()
-    return JSON.parse(models).models
-}
+/** 默认导出单例 */
+export default ModelConfigManager.getInstance()

@@ -7,6 +7,8 @@ import JsonConfigEditor from "../JsonConfigEditor"
 
 
 export default function Models() {
+    // messageApi
+    const [messageApi, contextHolder] = message.useMessage()
     // 模型列表
     const [models, setModels] = useState<IModelItem[]>([])
     // 模型配置
@@ -97,16 +99,16 @@ export default function Models() {
             setSaving(true)
             const data = await window.llm.updateModels(modelConfig)
             if (data.code === 200) {
-                message.success("配置已保存")
+                messageApi.success("配置已保存")
                 setIsEdit(false)
                 fetchModelsConfig()
                 loadModels()
             } else {
-                message.error(data.message || "保存失败")
+                messageApi.error(data.message || "保存失败")
             }
         } catch (error) {
             console.error("保存配置失败:", error)
-            message.error("保存失败")
+            messageApi.error("保存失败")
         } finally {
             setSaving(false)
         }
@@ -120,6 +122,7 @@ export default function Models() {
 
     return (
         <div className="h-full bg-gray-50 p-6 overflow-hidden">
+            {contextHolder}
             {isEdit ? (
                 <section className="mx-auto max-w-4xl bg-white rounded-2xl border border-gray-200 shadow-lg p-6 space-y-5">
                     <div className="flex flex-wrap items-start justify-between gap-4">

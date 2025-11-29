@@ -6,6 +6,8 @@ import JsonConfigEditor from "../JsonConfigEditor"
 import { IMCPItem } from "../../type/MCP"
 
 export default function MCP() {
+    // messageApi
+     const [messageApi, contextHolder] = message.useMessage()
     // 是否编辑
     const [isEdit, setIsEdit] = useState<boolean>(false)
     // MCP 配置
@@ -16,7 +18,8 @@ export default function MCP() {
     const [saving, setSaving] = useState<boolean>(false)
     // MCP 列表
     const [mcps, setMcps] = useState<IMCPItem[]>([])
-
+    // 列表是否加载中
+    const [isMCPLoading, setIsMCPLoading] = useState<boolean>(false)
     /**
      * 获取MCP配置
      * 
@@ -32,9 +35,8 @@ export default function MCP() {
             if (data.code === 200) {
                 setConfig(data.data || "{}")
             }
-        } finally {
-            setLoading(false)
-        }
+        } catch (error) { }
+        setLoading(false)
     }
 
     /**
@@ -50,15 +52,15 @@ export default function MCP() {
             setSaving(true)
             const data = await window.llm.updateMCPConfig(config)
             if (data.code === 200) {
-                message.success("配置已保存")
+                messageApi.success("配置已保存")
                 setIsEdit(false)
                 fetchMCPConfig()
                 loadConfig()
             } else {
-                message.error(data.message || "保存失败")
+                messageApi.error(data.message || "保存失败")
             }
         } catch (error) {
-            message.error("保存失败")
+            messageApi.error("保存失败")
         } finally {
             setSaving(false)
         }
@@ -73,10 +75,12 @@ export default function MCP() {
      * @returns {Promise<void>}
      */
     const loadConfig = async () => {
+        setIsMCPLoading(true)
         const data = await window.llm.loadMCPConfig()
         if (data.code === 200) {
             setMcps(data.data)
         }
+        setIsMCPLoading(false)
     }
 
     useEffect(() => {
@@ -86,6 +90,7 @@ export default function MCP() {
 
     return (
         <div className="h-full bg-gray-50 p-6 overflow-hidden">
+            {contextHolder}
             {isEdit ? (
                 <section className="mx-auto max-w-4xl bg-white rounded-2xl border border-gray-200 shadow-lg p-6 space-y-5">
                     <div className="flex flex-wrap items-start justify-between gap-4">
@@ -136,11 +141,19 @@ export default function MCP() {
                             </div>
                         ) : config ? (
                             <ul className="space-y-4 p-4">
+                                {isMCPLoading && (
+                                    <li className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 hover:shadow-md transition-shadow">
+                                        <div className="flex flex-col items-center justify-center gap-3 py-8">
+                                            <Spin size="large" />
+                                            <span className="text-sm text-gray-500">正在加载 MCP 实例...</span>
+                                        </div>
+                                    </li>
+                                )}
                                 {mcps.length > 0 ? (
                                     mcps.map((item) => (
                                         <li
                                             key={item.id}
-                                            className="rounded-2xl border border-gray-100 bg白 shadow-sm p-4 hover:shadow-md transition-shadow"
+                                            className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 hover:shadow-md transition-shadow"
                                         >
                                             <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                                                 <div className="text-base font-semibold text-gray-900">{item.id}</div>

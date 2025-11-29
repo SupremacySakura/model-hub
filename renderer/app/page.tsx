@@ -165,6 +165,7 @@ export default function Home() {
     setMessages([])
     if (data.code === 200) {
       fetchHitories()
+      messageApi.success("所有会话历史已清空")
     }
   }
 
