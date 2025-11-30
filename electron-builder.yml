@@ -13,7 +13,7 @@ files:
 # Windows 配置
 win:
   target:
-    - portable      # 生成安装器，portable 可改为单文件 exe
+    - nsis      # 生成安装器，portable 可改为单文件 exe
   defaultArch: x64  # 默认架构，可改成 arm64 / all
 
 # Mac 配置
