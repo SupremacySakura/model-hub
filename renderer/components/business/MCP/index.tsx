@@ -2,9 +2,9 @@
 
 import { Button, Empty, message, Spin, Tag } from "antd"
 import { useEffect, useState } from "react"
-import JsonConfigEditor from "../JsonConfigEditor"
-import { IMCPItem } from "../../type/MCP"
-import { getMCPConfig, loadMCPs, updateMCPConfig } from '../../services/index'
+import JsonConfigEditor from "../../ui/JsonConfigEditor"
+import { IMCPItem } from "../../../type/MCP"
+import { getMCPConfig, loadMCPs, updateMCPConfig } from '../../../services'
 export default function MCP() {
     // messageApi
     const [messageApi, contextHolder] = message.useMessage()
@@ -150,41 +150,71 @@ export default function MCP() {
                                     </li>
                                 )}
                                 {mcps.length > 0 ? (
-                                    mcps.map((item) => (
-                                        <li
-                                            key={item.id}
-                                            className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 hover:shadow-md transition-shadow"
-                                        >
-                                            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                                                <div className="text-base font-semibold text-gray-900">{item.id}</div>
-                                                <Tag color="blue">{item.tools.length + item.prompts.length} 资源</Tag>
-                                            </div>
-                                            <div className="space-y-2 text-sm text-gray-600">
-                                                <div className="flex flex-wrap gap-2">
-                                                    {item.tools.length ? (
-                                                        item.tools.map((tool) => (
-                                                            <Tag key={tool.name} color="green">
-                                                                工具 · {tool.name}
-                                                            </Tag>
-                                                        ))
-                                                    ) : (
-                                                        <span className="text-gray-400">暂无工具</span>
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {item.prompts.length ? (
-                                                        item.prompts.map((prompt) => (
-                                                            <Tag key={prompt.name} color="purple">
-                                                                提示词 · {prompt.name}
-                                                            </Tag>
-                                                        ))
-                                                    ) : (
-                                                        <span className="text-gray-400">暂无提示词</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </li>
-                                    ))
+                                    mcps.map((item) => {
+                                        if (item.isError) {
+                                            return (
+                                                <li
+                                                    key={item.id}
+                                                    className="rounded-2xl border-2 border-red-200 bg-red-50 shadow-sm p-4"
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Tag color="red">错误</Tag>
+                                                        <div className="text-sm text-red-600 font-medium">{item.id}</div>
+                                                    </div>
+                                                    <div className="mt-2 text-sm text-red-500">
+                                                        加载失败，请检查配置
+                                                    </div>
+                                                </li>
+                                            )
+                                        } else {
+                                            return (
+                                                <li
+                                                    key={item.id}
+                                                    className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 hover:shadow-md transition-shadow"
+                                                >
+                                                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                                        <div className="text-base font-semibold text-gray-900">{item.id}</div>
+                                                        <Tag color="blue">{item.tools.length + item.prompts.length + (item.resources?.length || 0)} 资源</Tag>
+                                                    </div>
+                                                    <div className="space-y-2 text-sm text-gray-600">
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {item.tools.length ? (
+                                                                item.tools.map((tool) => (
+                                                                    <Tag key={tool.name} color="blue">
+                                                                        工具 · {tool.name}
+                                                                    </Tag>
+                                                                ))
+                                                            ) : (
+                                                                <span className="text-gray-400">暂无工具</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {item.prompts.length ? (
+                                                                item.prompts.map((prompt) => (
+                                                                    <Tag key={prompt.name} color="purple">
+                                                                        提示词 · {prompt.name}
+                                                                    </Tag>
+                                                                ))
+                                                            ) : (
+                                                                <span className="text-gray-400">暂无提示词</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {item.resources?.length ? (
+                                                                item.resources.map((resource) => (
+                                                                    <Tag key={resource.name} color="green">
+                                                                        资源 · {resource.name}
+                                                                    </Tag>
+                                                                ))
+                                                            ) : (
+                                                                <span className="text-gray-400">暂无资源</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                            )
+                                        }
+                                    })
                                 ) : (
                                     <div className="flex h-48 items-center justify-center">
                                         <Empty description="暂无 MCP 实例" />

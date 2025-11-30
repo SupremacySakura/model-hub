@@ -3,9 +3,9 @@
 import React, { useState } from 'react'
 import type { MenuProps } from 'antd'
 import { Button, Menu } from 'antd'
-import Models from '../../components/Models'
+import Models from '../../components/business/Models'
 import Link from 'next/link'
-import MCP from '../../components/MCP'
+import MCP from '../../components/business/MCP'
 
 type MenuItem = Required<MenuProps>['items'][number]
 

@@ -21,7 +21,7 @@ class MCPManager {
     private config: IMCPConfig = { mcpServers: {} }
     private cache: IMCPItem[] = []
     private dirty = true
-
+    private clientList: Client[] = []
     /** 单例入口 */
     public static getInstance() {
         if (!MCPManager.instance) {
@@ -81,11 +81,17 @@ class MCPManager {
 
         for (const name in this.config.mcpServers) {
             const conf = this.config.mcpServers[name]
-
+            const result: IMCPItem = {
+                id: name,
+                tools: [],
+                prompts: [],
+                resources: [],
+                isError: false,
+            }
             try {
                 const client = new Client({ name, version: '1.0.0' })
 
-                let transport: any
+                let transport: StdioClientTransport | StreamableHTTPClientTransport
 
                 if ('command' in conf) {
                     transport = new StdioClientTransport(conf)
@@ -97,19 +103,31 @@ class MCPManager {
                 }
 
                 await client.connect(transport)
-
-                const tools = await client.listTools()
-                const prompts = await client.listPrompts()
-
-                mcps.push({
-                    id: name,
-                    tools: tools.tools,
-                    prompts: prompts.prompts,
-                    client
-                })
-
+                result.client = client
+                try {
+                    const tools = await client.listTools()
+                    result.tools = tools.tools
+                } catch (error) {
+                    console.error(`MCP服务器${name}中不存在tools`)
+                }
+                try {
+                    const prompts = await client.listPrompts()
+                    result.prompts = prompts.prompts
+                } catch (error) {
+                    console.error(`MCP服务器${name}中不存在propmts`)
+                }
+                try {
+                    const resources = await client.listResources()
+                    result.resources = resources.resources
+                } catch (error) {
+                    console.error(`MCP服务器${name}中不存在resources`)
+                }
+                mcps.push(result)
+                this.clientList.push(client)
             } catch (err) {
                 console.error(`Error connecting to MCP server ${name}:`, err)
+                result.isError = true
+                mcps.push(result)
                 continue
             }
         }
@@ -123,6 +141,12 @@ class MCPManager {
     public async get(name: string): Promise<IMCPItem | undefined> {
         const all = await this.loadAll()
         return all.find(m => m.id === name)
+    }
+
+    public async closeAllClient() {
+        for (const item of this.clientList) {
+            await item?.close()
+        }
     }
 }
 

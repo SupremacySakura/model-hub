@@ -2,9 +2,9 @@
 
 import { Button, Input, message, Spin } from "antd"
 import { useEffect, useMemo, useState } from "react"
-import { IModelItem } from "../../type/model"
-import JsonConfigEditor from "../JsonConfigEditor"
-import { getModelsConfig, updateModelsConfig, loadModels } from "../../services"
+import { IModelItem } from "../../../type/model"
+import JsonConfigEditor from "../../ui/JsonConfigEditor"
+import { getModelsConfig, updateModelsConfig, loadModels } from "../../../services"
 
 export default function Models() {
     // messageApi

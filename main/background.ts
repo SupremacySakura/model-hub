@@ -2,6 +2,7 @@ import path from 'path'
 import { app } from 'electron'
 import serve from 'electron-serve'
 import { createWindow } from './helpers'
+import MCPManager from './utils/MCP'
 import './server/index'
 const isProd = process.env.NODE_ENV === 'production'
 
@@ -19,6 +20,7 @@ if (isProd) {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
+    minWidth: 600
   })
 
   if (isProd) {
@@ -32,4 +34,12 @@ if (isProd) {
 
 app.on('window-all-closed', () => {
   app.quit()
+})
+
+app.on('before-quit', async () => {
+  await MCPManager.closeAllClient()
+})
+
+process.on('exit', async () => {
+  await MCPManager.closeAllClient()
 })

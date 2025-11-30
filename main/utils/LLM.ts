@@ -144,7 +144,6 @@ export const callLLM = async (LLM: OpenAI, messages: Message[], model: string, s
     // 如果模型决定调用工具
     if (isToolCall && toolCalls.length > 0) {
         console.log('模型要求调用工具:', toolCalls)
-
         // 调用所有工具并收集结果
         const toolMessages: Message[] = []
         for (const call of toolCalls) {

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react"
 import { IModelItem } from "../type/model"
 import { IHistoryItem, Message } from "../type/message"
 import { loadModels, getHistory, addHistory, deleteSingleHistory, deleteAllHistory, callLLM } from "../services"
+import LLMMarkdown from "../components/ui/Markdown"
 
 export default function Home() {
   // 存储当前聊天记录
@@ -97,12 +98,12 @@ export default function Home() {
       apiKey: selectedModel?.apiKey,
       baseURL: selectedModel?.baseURL,
     }, (data: string) => {
+      setIsLoding(false)
       setMessages(prev => prev.map((item) => item.id === id ? {
         ...item,
         content: item.content + data
       } : item))
     })
-    setIsLoding(false)
   }
 
   /**
@@ -223,7 +224,7 @@ export default function Home() {
       {/* 主内容区域 */}
       <section className="w-full flex flex-1 overflow-hidden">
         {/* 历史记录侧边栏 - 占据文档流 */}
-        <div className={`border-r border-gray-200 bg-white  ${showHistory ? 'w-64' : 'w-0'} duration-300 ease-in overflow-hidden`}>
+        <div className={`border-r border-gray-200 bg-white  ${showHistory ? 'w-64' : 'w-0'} duration-300 ease-in overflow-hidden shrink-0`}>
           <div className="p-2 w-64 border-b border-gray-200">
             <Space>
               <Button onClick={handleNewChat}>新聊天</Button>
@@ -268,15 +269,15 @@ export default function Home() {
           </div>
         </div>
         {/* 主聊天区域 */}
-        <main className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col min-w-0">
           {/* 聊天消息区域 */}
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4" ref={messagesRef}>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-4" ref={messagesRef}>
             {messages?.length === 0 ? (
               <div className="flex items-center justify-center h-full text-gray-400">
                 开始你的对话吧
               </div>
             ) : (
-              messages?.map((msg, index) => (
+              messages?.map((msg, index) => msg.content.length !== 0 && (
                 <div
                   key={msg?.id || index}
                   className={`flex ${msg?.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -288,7 +289,7 @@ export default function Home() {
                       }`}
                   >
                     <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {msg?.content}
+                      <LLMMarkdown content={msg?.content}></LLMMarkdown>
                     </div>
                     <div
                       className={`text-xs mt-1 ${msg?.role === 'user' ? 'text-blue-100' : 'text-gray-400'
@@ -300,11 +301,17 @@ export default function Home() {
                 </div>
               ))
             )}
-            {isLoding && <Spin></Spin>}
+            {isLoding && (
+              <div className={`flex-col justify-start`}>
+                <div className="max-w-[70%] w-[6em] rounded-lg px-4 py-2 bg-white text-gray-800 border border-gray-200">
+                  思考中...
+                </div>
+                <Spin></Spin>
+              </div>)}
           </div>
 
           {/* 输入区域 - 统一背景框 */}
-          <div className="border-t border-gray-200 bg-white px-6 py-4">
+          <div className="border-t border-gray-200 bg-white px-4 py-2">
             <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 space-y-3">
               <Input.TextArea
                 placeholder="输入消息..."

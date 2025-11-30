@@ -28,7 +28,7 @@ export const callLLM = async (params: ICallLLMParams, onData: (data: string) => 
         const chunk = decoder.decode(value, { stream: true })
         const lines = chunk.split('\n\n') // SSE 每条事件以空行分隔
         for (const line of lines) {
-            const data = line.replace(/^data: /, '').trim()
+            const data = line.replace(/^data: /, '')
             if (data !== '[DONE]') {
                 onData(data)
             }
