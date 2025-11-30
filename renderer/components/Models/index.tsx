@@ -4,7 +4,7 @@ import { Button, Input, message, Spin } from "antd"
 import { useEffect, useMemo, useState } from "react"
 import { IModelItem } from "../../type/model"
 import JsonConfigEditor from "../JsonConfigEditor"
-
+import { getModelsConfig, updateModelsConfig, loadModels } from "../../services"
 
 export default function Models() {
     // messageApi
@@ -22,17 +22,15 @@ export default function Models() {
     // 是否在保存中
     const [saving, setSaving] = useState<boolean>(false)
     /**
-     * 从主进程获取模型列表
-     * 
-     * 通过IPC调用获取所有可用的模型列表，并更新模型状态
+     * 通过HTTP调用获取所有可用的模型列表，并更新模型状态
      * 
      * @async
      * @returns {Promise<void>}
      */
-    const loadModels = async () => {
+    const handleLoadModels = async () => {
         try {
             setLoading(true)
-            const data = await window.llm.loadModels()
+            const data = await loadModels()
             if (data.code === 200) {
                 setModels(data.data)
             }
@@ -42,16 +40,14 @@ export default function Models() {
     }
 
     /**
-     * 从主进程获取模型配置
-     * 
-     * 通过IPC调用获取模型配置，并确保配置为字符串类型
+     * 通过HTTP调用获取模型配置，并确保配置为字符串类型
      * 
      * @async
      * @returns {Promise<void>}
      */
-    const fetchModelsConfig = async () => {
+    const handleGetModelsConfig = async () => {
         try {
-            const data = await window.llm.getModels()
+            const data = await getModelsConfig()
             if (data.code === 200) {
                 setModelConfig(typeof data.data === 'string' ? data.data : JSON.stringify(data.data, null, 2))
             }
@@ -89,7 +85,7 @@ export default function Models() {
     /**
      * 保存模型配置
      * 
-     * 通过IPC调用保存模型配置，并更新模型列表和配置
+     * 通过HTTP调用保存模型配置，并更新模型列表和配置
      * 
      * @async
      * @returns {Promise<void>}
@@ -97,12 +93,12 @@ export default function Models() {
     const handleSave = async () => {
         try {
             setSaving(true)
-            const data = await window.llm.updateModels(modelConfig)
+            const data = await updateModelsConfig(modelConfig)
             if (data.code === 200) {
                 messageApi.success("配置已保存")
                 setIsEdit(false)
-                fetchModelsConfig()
-                loadModels()
+                handleGetModelsConfig()
+                handleLoadModels()
             } else {
                 messageApi.error(data.message || "保存失败")
             }
@@ -116,8 +112,8 @@ export default function Models() {
 
     // 初始化
     useEffect(() => {
-        loadModels()
-        fetchModelsConfig()
+        handleLoadModels()
+        handleGetModelsConfig()
     }, [])
 
     return (

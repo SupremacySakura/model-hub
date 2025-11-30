@@ -4,10 +4,10 @@ import { Button, Empty, message, Spin, Tag } from "antd"
 import { useEffect, useState } from "react"
 import JsonConfigEditor from "../JsonConfigEditor"
 import { IMCPItem } from "../../type/MCP"
-
+import { getMCPConfig, loadMCPs, updateMCPConfig } from '../../services/index'
 export default function MCP() {
     // messageApi
-     const [messageApi, contextHolder] = message.useMessage()
+    const [messageApi, contextHolder] = message.useMessage()
     // 是否编辑
     const [isEdit, setIsEdit] = useState<boolean>(false)
     // MCP 配置
@@ -28,10 +28,10 @@ export default function MCP() {
      * @async
      * @returns {Promise<void>}
      */
-    const fetchMCPConfig = async () => {
+    const handleGetMCPConfig = async () => {
         try {
             setLoading(true)
-            const data = await window.llm.getMCPConfig()
+            const data = await getMCPConfig()
             if (data.code === 200) {
                 setConfig(data.data || "{}")
             }
@@ -50,12 +50,12 @@ export default function MCP() {
     const handleSave = async () => {
         try {
             setSaving(true)
-            const data = await window.llm.updateMCPConfig(config)
+            const data = await updateMCPConfig(config)
             if (data.code === 200) {
                 messageApi.success("配置已保存")
                 setIsEdit(false)
-                fetchMCPConfig()
-                loadConfig()
+                handleGetMCPConfig()
+                handleLoadMCP()
             } else {
                 messageApi.error(data.message || "保存失败")
             }
@@ -74,18 +74,18 @@ export default function MCP() {
      * @async
      * @returns {Promise<void>}
      */
-    const loadConfig = async () => {
+    const handleLoadMCP = async () => {
         setIsMCPLoading(true)
-        const data = await window.llm.loadMCPConfig()
+        const data = await loadMCPs()
         if (data.code === 200) {
-            setMcps(data.data)
+            setMcps(data.data || [])
         }
         setIsMCPLoading(false)
     }
 
     useEffect(() => {
-        fetchMCPConfig()
-        loadConfig()
+        handleGetMCPConfig()
+        handleLoadMCP()
     }, [])
 
     return (

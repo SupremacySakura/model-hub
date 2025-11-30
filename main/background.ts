@@ -1,8 +1,8 @@
 import path from 'path'
-import { app, ipcMain } from 'electron'
+import { app } from 'electron'
 import serve from 'electron-serve'
 import { createWindow } from './helpers'
-import './handler/LLM'
+import './server/index'
 const isProd = process.env.NODE_ENV === 'production'
 
 if (isProd) {

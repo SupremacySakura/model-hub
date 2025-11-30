@@ -49,7 +49,7 @@ export const getLLM = (apiKey: string, baseURL: string) => {
  * @returns {Promise<void>}
  * @throws {Error} 调用API或处理响应时可能抛出错误
  */
-export const callLLM = async (LLM: OpenAI, messages: [], model: string, sessionId: string, onData: (delta: string) => void) => {
+export const callLLM = async (LLM: OpenAI, messages: Message[], model: string, sessionId: string, onData: (delta: string) => void) => {
     // 将用户信息存储到历史记录中
     for (const message of messages) {
         historyManager.add(sessionId, message)

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { IModelItem } from "../type/model"
 import { IHistoryItem, Message } from "../type/message"
+import { loadModels, getHistory, addHistory, deleteSingleHistory, deleteAllHistory, callLLM } from "../services"
 
 export default function Home() {
   // 存储当前聊天记录
@@ -29,8 +30,6 @@ export default function Home() {
   const [sessionId, setSessionId] = useState<string>(crypto.randomUUID())
   // 聊天框dom
   const messagesRef = useRef<HTMLDivElement>(null)
-  // 是否已经渲染
-  const [isMounted, setIsMounted] = useState<boolean>(false)
 
   /**
    * 处理模型选择变更
@@ -77,26 +76,33 @@ export default function Home() {
     setMessage("")
     setIsLoding(true)
 
-    // 添加助手占位消息
-    const assistantMessage: Message = {
-      id: Date.now() + 1,
+    const id = Date.now() + 1
+    const assistantMessage = {
+      id,
       role: "assistant",
       content: "",
       time: new Date().toLocaleString(),
     }
+    // 添加助手占位消息
     setMessages(prev => [...prev, assistantMessage])
 
     // 记录当前助手消息id
-    currentAssistantId.current = assistantMessage.id
+    currentAssistantId.current = id
 
     // 通过 IPC 调用大模型接口
-    await window.llm.start({
+    await callLLM({
       messages: [userMessage],
       model: selectedModel?.name,
       sessionId,
       apiKey: selectedModel?.apiKey,
       baseURL: selectedModel?.baseURL,
+    }, (data: string) => {
+      setMessages(prev => prev.map((item) => item.id === id ? {
+        ...item,
+        content: item.content + data
+      } : item))
     })
+    setIsLoding(false)
   }
 
   /**
@@ -111,9 +117,12 @@ export default function Home() {
     setMessages([])
     setSessionId(newSessionId)
       ; (async () => {
-        const data = await window.llm.addHistory(newSessionId)
+        const data = await addHistory(newSessionId)
+        if (data.code === 200) {
+          messageApi.success("新会话已创建")
+        }
       })()
-    fetchHitories()
+    handleGetHistory()
   }
 
   /**
@@ -124,9 +133,10 @@ export default function Home() {
    * @async
    * @returns {Promise<void>}
    */
-  const fetchHitories = async (isInit?: boolean) => {
+  const handleGetHistory = async (isInit?: boolean) => {
     try {
-      const data = await window.llm.getAllHistories()
+      const data = await getHistory()
+      console.log(data)
       if (data.code === 200) {
         setHistories(data.data)
         if (isInit && data.data.length !== 0) {
@@ -161,94 +171,30 @@ export default function Home() {
    * @returns {Promise<void>}
    */
   const handleDeleteAllHistories = async () => {
-    const data = await window.llm.deleteAllHistories()
+    const data = await deleteAllHistory()
     setMessages([])
     if (data.code === 200) {
-      fetchHitories()
+      handleGetHistory()
       messageApi.success("所有会话历史已清空")
     }
   }
-
-  /**
-   * 监听大模型回复
-   */
-  useEffect(() => {
-    // 定义事件处理函数
-    const handleChunk = (delta: string) => {
-      if (!currentAssistantId.current) return
-      if (isLoding) {
-        setIsLoding(false)
+  const handleLoadModels = async () => {
+    try {
+      const data = await loadModels()
+      if (data.code === 200) {
+        setModels(data.data)
+        setSelectedModel(data.data[0])
       }
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === currentAssistantId.current
-            ? { ...msg, content: msg.content + delta }
-            : msg
-        )
-      )
+    } catch (error) {
+      console.error('Error fetching models:', error)
     }
-
-    const handleEnd = () => {
-      setIsLoding(false)
-      currentAssistantId.current = null
-      // 每次完成都刷新历史记录
-      fetchHitories()
-    }
-
-    const handleError = (err: string) => {
-      console.error("LLM Error:", err)
-      setMessages(prev => [
-        ...prev,
-        {
-          id: Date.now(),
-          role: "assistant",
-          content: "❌ 模型调用失败：" + err,
-          time: new Date().toLocaleString(),
-        },
-      ])
-      currentAssistantId.current = null
-      setIsLoding(false)
-    }
-
-    // 添加事件监听器，并获取清理函数
-    const removeChunkListener = window.llm.onChunk(handleChunk)
-    const removeEndListener = window.llm.onEnd(handleEnd)
-    const removeErrorListener = window.llm.onError(handleError)
-
-    // 清理函数：移除事件监听器
-    return () => {
-      // 移除所有事件监听器，避免重复监听
-      removeChunkListener()
-      removeEndListener()
-      removeErrorListener()
-    }
-
-  }, [])
+  }
 
   // 初始化获取模型列表
   useEffect(() => {
-    setIsMounted(true)
-    /**
-     * 从主进程获取模型列表
-     * 
-     * 通过IPC调用获取所有可用的模型列表，并更新模型状态
-     * 
-     * @async
-     * @returns {Promise<void>}
-     */
-    const fetchModels = async () => {
-      try {
-        const data = await window.llm.loadModels()
-        if (data.code === 200) {
-          setModels(data.data)
-        }
-      } catch (error) {
-        console.error('Error fetching models:', error)
-      }
-    }
-    fetchModels()
+    handleLoadModels()
     setMessages([])
-    fetchHitories(true)
+    handleGetHistory(true)
   }, [])
 
   useEffect(() => {
