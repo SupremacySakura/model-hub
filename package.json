@@ -1,13 +1,14 @@
 {
   "private": true,
-  "name": "my-nextron-app",
-  "description": "My application description",
+  "name": "model-hub",
+  "description": "ModelHub is a powerful AI hub that lets you import your own models and connect to MCP clients with ease. Streamline your AI workflows, manage multiple models, and get real-time responses with rich Markdown formatting and code support—all in one intuitive platform.",
   "version": "1.0.0",
-  "author": "Yoshihide Shiono <shiono.yoshihide@gmail.com>",
+  "author": "shiyihong241 <shiyihong241@gmail.com>",
   "main": "app/background.js",
   "scripts": {
     "dev": "nextron",
     "build": "nextron build",
+    "build:win": "electron-builder --win",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {

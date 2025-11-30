@@ -1,5 +1,5 @@
 import path from 'path'
-import { app } from 'electron'
+import { app, Menu } from 'electron'
 import serve from 'electron-serve'
 import { createWindow } from './helpers'
 import MCPManager from './utils/MCP'
@@ -22,7 +22,7 @@ if (isProd) {
     },
     minWidth: 600
   })
-
+  Menu.setApplicationMenu(null)
   if (isProd) {
     await mainWindow.loadURL('app://./home')
   } else {
