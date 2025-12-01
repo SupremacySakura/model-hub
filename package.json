@@ -12,6 +12,7 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "@ant-design/icons": "^5.6.1",
     "@ant-design/nextjs-registry": "^1.2.0",
     "@koa/cors": "^5.0.0",
     "@koa/router": "^14.0.0",

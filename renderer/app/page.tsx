@@ -1,12 +1,13 @@
 'use client'
 
-import { Button, Input, Select, Space, Spin, Upload, message as antdMessage } from "antd"
+import { Button, Input, Select, Space, Upload, message as antdMessage } from "antd"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { IModelItem } from "../type/model"
 import { IHistoryItem, Message } from "../type/message"
-import { loadModels, getHistory, addHistory, deleteSingleHistory, deleteAllHistory, callLLM } from "../services"
-import LLMMarkdown from "../components/ui/Markdown"
+import { loadModels, getAllHistory, getSingleHistory, addHistory, deleteSingleHistory, deleteAllHistory, callLLM } from "../services"
+import MessageArea from "../components/business/MessageArea"
+import HistoryArea from "../components/business/HistoryArea"
 
 export default function Home() {
   // 存储当前聊天记录
@@ -20,7 +21,7 @@ export default function Home() {
   // 选中的模型
   const [selectedModel, setSelectedModel] = useState<IModelItem>(models[0])
   // 加载状态
-  const [isLoding, setIsLoding] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   // 当前ai回复id
   const currentAssistantId = useRef<number | null>(null)
   // 弹窗
@@ -75,7 +76,7 @@ export default function Home() {
 
     setMessages(prev => [...prev, userMessage])
     setMessage("")
-    setIsLoding(true)
+    setIsLoading(true)
 
     const id = Date.now() + 1
     const assistantMessage = {
@@ -92,18 +93,16 @@ export default function Home() {
 
     // 通过 IPC 调用大模型接口
     await callLLM({
-      messages: [userMessage],
-      model: selectedModel?.name,
-      sessionId,
-      apiKey: selectedModel?.apiKey,
-      baseURL: selectedModel?.baseURL,
+      messages: [userMessage], model: selectedModel?.name, sessionId, apiKey: selectedModel?.apiKey, baseURL: selectedModel?.baseURL,
     }, (data: string) => {
-      setIsLoding(false)
+      setIsLoading(false)
       setMessages(prev => prev.map((item) => item.id === id ? {
         ...item,
         content: item.content + data
       } : item))
     })
+    // 获取最新历史记录
+    handleGetSingleHistory(sessionId)
   }
 
   /**
@@ -113,17 +112,15 @@ export default function Home() {
    * 
    * @returns {void}
    */
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
     const newSessionId = crypto.randomUUID()
     setMessages([])
     setSessionId(newSessionId)
-      ; (async () => {
-        const data = await addHistory(newSessionId)
-        if (data.code === 200) {
-          messageApi.success("新会话已创建")
-        }
-      })()
-    handleGetHistory()
+    const data = await addHistory(newSessionId)
+    if (data.code === 200) {
+      messageApi.success("新会话已创建")
+    }
+    handleGetSingleHistory(newSessionId)
   }
 
   /**
@@ -134,10 +131,9 @@ export default function Home() {
    * @async
    * @returns {Promise<void>}
    */
-  const handleGetHistory = async (isInit?: boolean) => {
+  const handleGetAllHistory = async (isInit?: boolean) => {
     try {
-      const data = await getHistory()
-      console.log(data)
+      const data = await getAllHistory()
       if (data.code === 200) {
         setHistories(data.data)
         if (isInit && data.data.length !== 0) {
@@ -150,6 +146,38 @@ export default function Home() {
     }
   }
 
+  /**
+   * 拉取指定会话历史记录
+   * 
+   * 通过IPC调用获取指定会话的历史记录，并更新历史记录状态
+   * 
+   * @async
+   * @param {string} sessionId - 要拉取历史记录的会话ID
+   * @returns {Promise<void>}
+   */
+  const handleGetSingleHistory = async (sessionId: string) => {
+    try {
+      const data = await getSingleHistory(sessionId)
+      if (data.code === 200) {
+        setMessages(data.data.messages)
+        // 如果历史记录里面已经有了这个会话，就更新它的消息
+        setHistories(prev => prev.map((item) => item.sessionId === sessionId ? {
+          ...item,
+          messages: data.data.messages
+        } : item))
+        // 如果历史记录没有这个会话，就添加它
+        if (!histories.find((item) => item.sessionId === sessionId)) {
+          setHistories(prev => [{
+            sessionId,
+            messages: data.data.messages,
+            createdTime: new Date().toLocaleString(),
+          }, ...prev])
+        }
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }
   /**
    * 切换到指定的历史会话
    * 
@@ -175,10 +203,36 @@ export default function Home() {
     const data = await deleteAllHistory()
     setMessages([])
     if (data.code === 200) {
-      handleGetHistory()
+      handleGetAllHistory()
       messageApi.success("所有会话历史已清空")
     }
   }
+
+  /**
+   * 删除指定会话历史记录
+   * 
+   * 通过IPC调用删除指定会话历史，并重新获取历史记录列表
+   * 
+   * @async
+   * @param {string} sessionId - 要删除的会话ID
+   * @returns {Promise<void>}
+   */
+  const handleDeleteSingleHistory = async (sessionId: string) => {
+    const data = await deleteSingleHistory(sessionId)
+    if (data.code === 200) {
+      messageApi.success("会话历史已清空")
+      handleGetAllHistory()
+    }
+  }
+
+  /**
+   * 加载模型列表
+   * 
+   * 通过HTTP调用获取可用模型列表，并更新模型状态
+   * 
+   * @async
+   * @returns {Promise<void>}
+   */
   const handleLoadModels = async () => {
     try {
       const data = await loadModels()
@@ -195,7 +249,7 @@ export default function Home() {
   useEffect(() => {
     handleLoadModels()
     setMessages([])
-    handleGetHistory(true)
+    handleGetAllHistory(true)
   }, [])
 
   useEffect(() => {
@@ -225,91 +279,14 @@ export default function Home() {
       <section className="w-full flex flex-1 overflow-hidden">
         {/* 历史记录侧边栏 - 占据文档流 */}
         <div className={`border-r border-gray-200 bg-white  ${showHistory ? 'w-64' : 'w-0'} duration-300 ease-in overflow-hidden shrink-0`}>
-          <div className="p-2 w-64 border-b border-gray-200">
-            <Space>
-              <Button onClick={handleNewChat}>新聊天</Button>
-              <Button onClick={handleDeleteAllHistories}>清空历史记录</Button>
-            </Space>
-          </div>
-          <div className="p-4 w-64 overflow-y-auto h-[calc(100vh-100px)]">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">聊天历史</h3>
-            <div className="space-y-2">
-              {histories?.length !== 0 && histories?.map((item) => {
-                const isActive = sessionId === item.sessionId
-                const preview = item?.messages.length >= 2
-                  ? item?.messages?.[item.messages.length - 2]?.content
-                  : '新聊天'
-                const previewTime = item?.messages?.[item.messages.length - 2]?.time
-
-                return (
-                  <div
-                    key={item.sessionId}
-                    className={`p-3 border rounded-lg text-sm transition-colors cursor-pointer shadow-sm ${isActive
-                      ? 'bg-blue-50 border-blue-200 text-blue-700'
-                      : 'bg-white border-transparent text-gray-600 hover:bg-gray-50'
-                      }`}
-                    onClick={() => handleChooseHistory(item.sessionId)}
-                  >
-                    <div className="font-medium truncate">{preview}</div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      {previewTime || '刚刚创建'}
-                    </div>
-                  </div>
-                )
-              })}
-              {histories?.length === 0 && (
-                <div className="flex flex-col items-center justify-center gap-2 text-gray-400 text-sm border border-dashed border-gray-200 rounded-lg p-4">
-                  <div>还没有历史记录，开启你的新聊天吧</div>
-                  <Button size="small" type="primary" onClick={handleNewChat}>
-                    立即开始
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
+          <HistoryArea histories={histories} activeSessionId={sessionId} handleClickItem={handleChooseHistory} handleNewChat={handleNewChat} handleDeleteAllHistories={handleDeleteAllHistories} handleDeleteSingleHistory={handleDeleteSingleHistory}></HistoryArea>
         </div>
         {/* 主聊天区域 */}
         <main className="flex-1 flex flex-col min-w-0">
           {/* 聊天消息区域 */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-4" ref={messagesRef}>
-            {messages?.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-gray-400">
-                开始你的对话吧
-              </div>
-            ) : (
-              messages?.map((msg, index) => msg.content.length !== 0 && (
-                <div
-                  key={msg?.id || index}
-                  className={`flex ${msg?.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[70%] rounded-lg px-4 py-2 ${msg?.role === 'user'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white text-gray-800 border border-gray-200'
-                      }`}
-                  >
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                      <LLMMarkdown content={msg?.content}></LLMMarkdown>
-                    </div>
-                    <div
-                      className={`text-xs mt-1 ${msg?.role === 'user' ? 'text-blue-100' : 'text-gray-400'
-                        }`}
-                    >
-                      {msg?.time}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-            {isLoding && (
-              <div className={`flex-col justify-start`}>
-                <div className="max-w-[70%] w-[6em] rounded-lg px-4 py-2 bg-white text-gray-800 border border-gray-200">
-                  思考中...
-                </div>
-                <Spin></Spin>
-              </div>)}
+            <MessageArea messages={messages} isLoading={isLoading}></MessageArea>
           </div>
-
           {/* 输入区域 - 统一背景框 */}
           <div className="border-t border-gray-200 bg-white px-4 py-2">
             <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 space-y-3">

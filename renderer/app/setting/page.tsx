@@ -6,6 +6,7 @@ import { Button, Menu } from 'antd'
 import Models from '../../components/business/Models'
 import Link from 'next/link'
 import MCP from '../../components/business/MCP'
+import Wait from '../../components/ui/Wait'
 
 type MenuItem = Required<MenuProps>['items'][number]
 
@@ -33,20 +34,24 @@ enum MenuKey {
  * 定义每个菜单项对应的组件和配置
  */
 const menuMap = {
-    [MenuKey.General]: {},
-    [MenuKey.Agents]: {},
-    [MenuKey.Tab]: {},
+    [MenuKey.General]: {
+        component: <Wait></Wait>
+    },
     [MenuKey.Models]: {
         component: <Models></Models>
     },
     [MenuKey.ToolsMcp]: {
         component: <MCP></MCP>
     },
-    [MenuKey.Rules]: {},
-    [MenuKey.Indexing]: {},
-    [MenuKey.Network]: {},
-    [MenuKey.Beta]: {},
-    [MenuKey.Docs]: {}
+    [MenuKey.Rules]: {
+        component: <Wait></Wait>
+    },
+    [MenuKey.Indexing]: {
+        component: <Wait></Wait>
+    },
+    [MenuKey.Beta]: {
+        component: <Wait></Wait>
+    }
 }
 
 /**
@@ -59,10 +64,8 @@ const items: MenuItem[] = [
         key: 'sub1',
         type: 'group',
         children: [
-            { key: MenuKey.General, label: 'General' },
-            { key: MenuKey.Agents, label: 'Agents' },
-            { key: MenuKey.Tab, label: 'Tab' },
-            { key: MenuKey.Models, label: 'Models' }
+            { key: MenuKey.General, label: '常规' },
+            { key: MenuKey.Models, label: '模型' }
         ],
     },
     {
@@ -72,7 +75,7 @@ const items: MenuItem[] = [
         key: 'sub2',
         type: 'group',
         children: [
-            { key: MenuKey.ToolsMcp, label: 'Tools & MCP' },
+            { key: MenuKey.ToolsMcp, label: '工具' },
         ],
     },
     {
@@ -82,22 +85,14 @@ const items: MenuItem[] = [
         key: 'sub3',
         type: 'group',
         children: [
-            { key: MenuKey.Rules, label: 'Rules and Commands' },
-            { key: MenuKey.Indexing, label: 'Indexing & Docs' },
-            { key: MenuKey.Network, label: 'Network' },
+            { key: MenuKey.Rules, label: '规则' },
+            { key: MenuKey.Indexing, label: '索引' },
             { key: MenuKey.Beta, label: 'Beta' },
         ],
     },
     {
         type: 'divider',
-    },
-    {
-        key: 'sub 4',
-        type: 'group',
-        children: [
-            { key: MenuKey.Docs, label: 'Docs' },
-        ],
-    },
+    }
 ]
 
 export default function Page() {

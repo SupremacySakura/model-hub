@@ -11,6 +11,13 @@ router.get('/', (ctx) => {
     ctx.body = response
 })
 
+router.get('/single',(ctx)=>{
+    const { sessionId } = ctx.request.query as { sessionId: string }
+    const history = historyManager.getBySessionId(sessionId)
+    const response = { message: 'Single history loaded successfully', data: history, code: 200 }
+    ctx.body = response
+})
+
 router.post('/add', (ctx) => {
     const { sessionId } = ctx.request.body as { sessionId: string }
     historyManager.add(sessionId)

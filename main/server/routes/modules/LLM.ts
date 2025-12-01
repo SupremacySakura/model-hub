@@ -1,5 +1,5 @@
 import Router from '@koa/router'
-import { callLLM, getLLM } from '../../../utils/LLM'
+import { LLMService } from '../../../utils/LLM'
 import { ICallLLMParams } from '../../../../renderer/type/LLM'
 
 const router = new Router({
@@ -15,11 +15,11 @@ router.post('/call', async (ctx) => {
     })
     ctx.status = 200
     try {
-        const LLM = getLLM(apiKey, baseURL)
+        const LLM = new LLMService(apiKey, baseURL, model)
         const write = (data: string) => {
             ctx.res.write(`data: ${data}\n\n`)
         }
-        await callLLM(LLM, messages, model, sessionId, (delta: string) => {
+        await LLM.chat(messages, sessionId, (delta: string) => {
             write(delta)
         })
     } catch (error) {

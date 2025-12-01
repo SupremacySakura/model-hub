@@ -22,8 +22,8 @@ if (isProd) {
     },
     minWidth: 600
   })
-  Menu.setApplicationMenu(null)
   if (isProd) {
+    Menu.setApplicationMenu(null)
     await mainWindow.loadURL('app://./home')
   } else {
     const port = process.argv[2]

@@ -71,6 +71,29 @@ class MCPManager {
         return JSON.stringify(this.config, null, 2)
     }
 
+    public async loadSingleMCP(name: string, config: StdioServerParameters | HTTPServerParameters): Promise<Client | null> {
+        try {
+            const client = new Client({ name, version: '1.0.0' })
+
+            let transport: StdioClientTransport | StreamableHTTPClientTransport
+
+            if ('command' in config) {
+                transport = new StdioClientTransport(config)
+            } else {
+                transport = new StreamableHTTPClientTransport(
+                    new URL(config.url),
+                    { requestInit: { headers: config.headers } }
+                )
+            }
+
+            await client.connect(transport)
+            return client
+        } catch (error) {
+            console.error(`加载MCP服务器${name}失败`, error)
+            return null
+        }
+    }
+
     /** --- 加载所有 MCP 服务器 --- */
     public async loadAll(): Promise<IMCPItem[]> {
         if (!this.dirty && this.cache.length > 0) {
@@ -89,42 +112,41 @@ class MCPManager {
                 isError: false,
             }
             try {
-                const client = new Client({ name, version: '1.0.0' })
-
-                let transport: StdioClientTransport | StreamableHTTPClientTransport
-
-                if ('command' in conf) {
-                    transport = new StdioClientTransport(conf)
-                } else {
-                    transport = new StreamableHTTPClientTransport(
-                        new URL(conf.url),
-                        { requestInit: { headers: conf.headers } }
-                    )
+                const client = await this.loadSingleMCP(name, conf)
+                // 如果没有返回client 则说明加载失败
+                if (!client) {
+                    result.isError = true
+                    mcps.push(result)
+                    continue
                 }
-
-                await client.connect(transport)
+                // 保存client
                 result.client = client
+                // 加载tools
                 try {
                     const tools = await client.listTools()
                     result.tools = tools.tools
                 } catch (error) {
                     console.error(`MCP服务器${name}中不存在tools`)
                 }
+                // 加载prompts
                 try {
                     const prompts = await client.listPrompts()
                     result.prompts = prompts.prompts
                 } catch (error) {
                     console.error(`MCP服务器${name}中不存在propmts`)
                 }
+                // 加载resources
                 try {
                     const resources = await client.listResources()
                     result.resources = resources.resources
                 } catch (error) {
                     console.error(`MCP服务器${name}中不存在resources`)
                 }
+                // 保存结果
                 mcps.push(result)
                 this.clientList.push(client)
             } catch (err) {
+                // 处理连接错误
                 console.error(`Error connecting to MCP server ${name}:`, err)
                 result.isError = true
                 mcps.push(result)
@@ -135,6 +157,14 @@ class MCPManager {
         this.cache = mcps
         this.dirty = false
         return mcps
+    }
+
+    public relinkClient(id: string, client: Client) {
+        this.cache.forEach((item) => {
+            if (item.id === id) {
+                item.client = client
+            }
+        })
     }
 
     /** 获取单个 MCP */

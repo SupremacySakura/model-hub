@@ -6,8 +6,16 @@ import { IHistoryItem } from "../../type/message"
  * @async
  * @returns {Promise<ApiResponse<IHistoryItem[]>>} 历史记录列表响应
  */
-export const getHistory = async (): Promise<ApiResponse<IHistoryItem[]>> => {
+export const getAllHistory = async (): Promise<ApiResponse<IHistoryItem[]>> => {
     const response = await fetch('http://localhost:11435/api/history')
+    const data = await response.json()
+    return data
+}
+
+export const getSingleHistory = async (sessionId: string): Promise<ApiResponse<IHistoryItem>> => {
+    const response = await fetch(`http://localhost:11435/api/history/single?sessionId=${sessionId}`, {
+        method: 'GET',
+    })
     const data = await response.json()
     return data
 }
@@ -21,7 +29,10 @@ export const getHistory = async (): Promise<ApiResponse<IHistoryItem[]>> => {
 export const addHistory = async (sessionId: string): Promise<ApiResponse<null>> => {
     const response = await fetch('http://localhost:11435/api/history/add', {
         method: 'POST',
-        body: JSON.stringify({ sessionId })
+        body: JSON.stringify({ sessionId }),
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
     const data = await response.json()
     return data
@@ -36,7 +47,10 @@ export const addHistory = async (sessionId: string): Promise<ApiResponse<null>> 
 export const deleteSingleHistory = async (sessionId: string): Promise<ApiResponse<null>> => {
     const response = await fetch('http://localhost:11435/api/history/single', {
         method: 'DELETE',
-        body: JSON.stringify({ sessionId })
+        body: JSON.stringify({ sessionId }),
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
     const data = await response.json()
     return data
