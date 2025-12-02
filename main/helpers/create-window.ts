@@ -5,7 +5,7 @@ import {
   Rectangle,
 } from 'electron'
 import Store from 'electron-store'
-
+import '../handler/setting'
 export const createWindow = (
   windowName: string,
   options: BrowserWindowConstructorOptions

@@ -7,6 +7,7 @@ import Models from '../../components/business/Models'
 import Link from 'next/link'
 import MCP from '../../components/business/MCP'
 import Wait from '../../components/ui/Wait'
+import GeneralSetting from '../../components/business/GeneralSetting'
 
 type MenuItem = Required<MenuProps>['items'][number]
 
@@ -35,7 +36,7 @@ enum MenuKey {
  */
 const menuMap = {
     [MenuKey.General]: {
-        component: <Wait></Wait>
+        component: <GeneralSetting></GeneralSetting>
     },
     [MenuKey.Models]: {
         component: <Models></Models>

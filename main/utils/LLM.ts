@@ -5,7 +5,7 @@ import historyManager from './history'
 import MCPManager from './MCP'
 import { IMCPItem } from '../../renderer/type/MCP'
 import filesManager from './files'
-
+import settingManager from './setting'
 /** tool call 类型 */
 type ToolCall = {
     id: string
@@ -197,7 +197,7 @@ export class LLMService {
 
                 const stream = await this.llm.chat.completions.create({
                     model: this.model,
-                    messages: conversation as [],
+                    messages: conversation.slice(0, settingManager.loadSettingConfig().LLM_CONTEXT_LENGTH) as [],  // 限制上下文长度
                     stream: true,
                     tools,
                     tool_choice: 'auto'

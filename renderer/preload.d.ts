@@ -1,3 +1,6 @@
+import type { settingIpcType } from '../main/ipc/setting'
 declare global {
-  interface Window {}
+  interface Window {
+    setting: settingIpcType
+  }
 }
