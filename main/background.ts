@@ -3,6 +3,7 @@ import { app, Menu } from 'electron'
 import serve from 'electron-serve'
 import { createWindow } from './helpers'
 import MCPManager from './utils/MCP'
+import filesManager from './utils/files'
 import './server/index'
 const isProd = process.env.NODE_ENV === 'production'
 
@@ -38,8 +39,10 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', async () => {
   await MCPManager.closeAllClient()
+  filesManager.deleteAllFile()
 })
 
 process.on('exit', async () => {
   await MCPManager.closeAllClient()
+  filesManager.deleteAllFile()
 })

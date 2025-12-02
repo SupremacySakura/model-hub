@@ -6,4 +6,5 @@ export interface ICallLLMParams {
     messages: Message[]
     sessionId: string
     model: string
+    files: string[]
 }

@@ -3,6 +3,7 @@ export interface Message {
   role: string
   content: string
   time: string
+  isError: boolean
 }
 
 export interface IHistoryItem {

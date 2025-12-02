@@ -4,6 +4,7 @@ import { Message } from '../../renderer/type/message'
 import historyManager from './history'
 import MCPManager from './MCP'
 import { IMCPItem } from '../../renderer/type/MCP'
+import filesManager from './files'
 
 /** tool call 类型 */
 type ToolCall = {
@@ -156,7 +157,7 @@ export class LLMService {
     }
 
     /** 对外主方法：询问 LLM */
-    public async chat(messages: Message[], sessionId: string, onData: (delta: string) => void): Promise<void> {
+    public async chat(messages: Message[], sessionId: string, files: string[], onData: (delta: string) => void): Promise<void> {
         /** 写入历史 */
         for (const message of messages) {
             historyManager.add(sessionId, message)
@@ -168,53 +169,70 @@ export class LLMService {
             id: Date.now(),
             role: 'assistant',
             content: '',
-            time: new Date().toLocaleString()
+            time: new Date().toLocaleString(),
+            isError: false
         }
-
         const conversation: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
             ...historyMessages,
-            ...messages
+            ...messages,
         ] as OpenAI.Chat.Completions.ChatCompletionMessageParam[]
 
-        const mcps = await MCPManager.loadAll()
-        const tools = mcps.flatMap(mcp => this.convertMCPToolsToOpenAITools(mcp))
-
-        let round = 0
-
-        while (round < this.maxToolRounds) {
-            round++
-            console.error(`🤖 Round ${round}`)
-
-            const stream = await this.llm.chat.completions.create({
-                model: this.model,
-                messages: conversation as [],
-                stream: true,
-                tools,
-                tool_choice: 'auto'
-            })
-
-            const toolCalls = await this.parseToolCallsFromStream(stream, (delta) => {
-                fullResponse.content += delta
-                onData(delta)
-            })
-
-            if (toolCalls.length > 0) {
+        try {
+            // 检查用户是否上传文件
+            if (files.length > 0) {
                 conversation.push({
-                    role: 'assistant',
-                    tool_calls: toolCalls
+                    role: 'user',
+                    content: `这是用户传递的文件：${filesManager.getFilesContent(files)?.join('\n')}`,
                 })
-
-                const toolMessages = await this.executeToolCalls(mcps, toolCalls)
-                conversation.push(...toolMessages)
-
-                continue
             }
 
-            break
-        }
+            const mcps = await MCPManager.loadAll()
+            const tools = mcps.flatMap(mcp => this.convertMCPToolsToOpenAITools(mcp))
 
-        console.error('✅ 对话完成')
-        console.error('fullResponse>>>', fullResponse)
-        historyManager.add(sessionId, fullResponse)
+            let round = 0
+
+            while (round < this.maxToolRounds) {
+                round++
+                console.error(`🤖 Round ${round}`)
+
+                const stream = await this.llm.chat.completions.create({
+                    model: this.model,
+                    messages: conversation as [],
+                    stream: true,
+                    tools,
+                    tool_choice: 'auto'
+                })
+
+                const toolCalls = await this.parseToolCallsFromStream(stream, (delta) => {
+                    fullResponse.content += delta
+                    onData(delta)
+                })
+
+                if (toolCalls.length > 0) {
+                    conversation.push({
+                        role: 'assistant',
+                        tool_calls: toolCalls
+                    })
+                    const toolMessages = await this.executeToolCalls(mcps, toolCalls)
+                    conversation.push(...toolMessages)
+                    continue
+                }
+                break
+            }
+
+            console.error('对话完成')
+            historyManager.add(sessionId, fullResponse)
+            filesManager.deleteAllFile()
+        } catch (error) {
+            const errorMessages = JSON.stringify({
+                error: true,
+                message: (error as Error).message || 'Unknown error'
+            })
+            fullResponse.isError = true
+            fullResponse.content = errorMessages
+            historyManager.add(sessionId, fullResponse)
+            filesManager.deleteAllFile()
+            throw error
+        }
     }
 }

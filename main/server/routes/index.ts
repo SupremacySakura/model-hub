@@ -3,6 +3,7 @@ import LLMRouter from './modules/LLM'
 import MCPRouter from './modules/MCP'
 import modelsRouter from './modules/models'
 import historyRouter from './modules/history'
+import filesRouter from './modules/files'
 
 const router = new Router({
     prefix: '/api'
@@ -17,5 +18,6 @@ router.use(LLMRouter.routes(), LLMRouter.allowedMethods())
 router.use(MCPRouter.routes(), MCPRouter.allowedMethods())
 router.use(modelsRouter.routes(), modelsRouter.allowedMethods())
 router.use(historyRouter.routes(), historyRouter.allowedMethods())
+router.use(filesRouter.routes(), filesRouter.allowedMethods())
 
 export default router

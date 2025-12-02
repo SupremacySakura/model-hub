@@ -15,6 +15,11 @@ export const callLLM = async (params: ICallLLMParams, onData: (data: string) => 
         },
         body: JSON.stringify(params)
     })
+    // HTTP 状态码检查
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`请求失败 ${response.status}: ${text}`);
+    }
     const reader = response.body?.getReader()
     if (!reader) {
         return

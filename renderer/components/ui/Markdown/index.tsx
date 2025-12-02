@@ -10,7 +10,7 @@ import 'katex/dist/katex.min.css'
 
 export default function MarkdownComponent({ content }: { content: string }) {
   return (
-    <div className="markdown-content">
+    <div className="markdown-content break-all">
       <Markdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeHighlight, rehypeKatex]}

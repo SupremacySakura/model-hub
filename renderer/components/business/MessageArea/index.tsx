@@ -23,18 +23,29 @@ export default function MessageArea({ messages, isLoading }: IParams) {
                     >
                         <div
                             className={`max-w-[70%] rounded-lg px-4 py-2 ${msg?.role === 'user'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-white text-gray-800 border border-gray-200'
+                                ? msg?.isError
+                                    ? 'bg-red-500 text-white'
+                                    : 'bg-blue-500 text-white'
+                                : msg?.isError
+                                    ? 'bg-red-50 text-red-800 border border-red-200'
+                                    : 'bg-white text-gray-800 border border-gray-200'
                                 }`}
                         >
                             <div className="text-sm leading-relaxed whitespace-pre-wrap">
                                 <MarkdownComponent content={msg?.content}></MarkdownComponent>
                             </div>
                             <div
-                                className={`text-xs mt-1 ${msg?.role === 'user' ? 'text-blue-100' : 'text-gray-400'
+                                className={`text-xs mt-1 flex items-center justify-between ${msg?.role === 'user'
+                                    ? 'text-blue-100'
+                                    : msg?.isError
+                                        ? 'text-red-500'
+                                        : 'text-gray-400'
                                     }`}
                             >
-                                {msg?.time}
+                                <span>{msg?.time}</span>
+                                {msg?.isError && (
+                                    <span className="ml-2 text-xs font-medium">❌ 失败</span>
+                                )}
                             </div>
                         </div>
                     </div>

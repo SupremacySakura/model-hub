@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Input, Select, Space, Upload, message as antdMessage } from "antd"
+import { Button, Collapse, GetProp, Input, Select, Space, Upload, UploadFile, UploadProps, message as antdMessage } from "antd"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { IModelItem } from "../type/model"
@@ -8,7 +8,9 @@ import { IHistoryItem, Message } from "../type/message"
 import { loadModels, getAllHistory, getSingleHistory, addHistory, deleteSingleHistory, deleteAllHistory, callLLM } from "../services"
 import MessageArea from "../components/business/MessageArea"
 import HistoryArea from "../components/business/HistoryArea"
+import FilePreview from "../components/ui/FilePreview"
 
+type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0]
 export default function Home() {
   // 存储当前聊天记录
   const [messages, setMessages] = useState<Message[]>([])
@@ -32,7 +34,12 @@ export default function Home() {
   const [sessionId, setSessionId] = useState<string>(crypto.randomUUID())
   // 聊天框dom
   const messagesRef = useRef<HTMLDivElement>(null)
-
+  // 上传文件列表
+  const [fileList, setFileList] = useState<UploadFile[]>([])
+  // 是否正在上传
+  const [uploading, setUploading] = useState(false)
+  // 已经上传的文件列表
+  const [uploadedFiles, setUploadedFiles] = useState<{ name: string, url: string }[]>([])
   /**
    * 处理模型选择变更
    * 
@@ -72,6 +79,7 @@ export default function Home() {
       role: "user",
       content: message,
       time: new Date().toLocaleString(),
+      isError: false
     }
 
     setMessages(prev => [...prev, userMessage])
@@ -79,11 +87,12 @@ export default function Home() {
     setIsLoading(true)
 
     const id = Date.now() + 1
-    const assistantMessage = {
+    const assistantMessage: Message = {
       id,
       role: "assistant",
       content: "",
       time: new Date().toLocaleString(),
+      isError: false
     }
     // 添加助手占位消息
     setMessages(prev => [...prev, assistantMessage])
@@ -91,16 +100,28 @@ export default function Home() {
     // 记录当前助手消息id
     currentAssistantId.current = id
 
-    // 通过 IPC 调用大模型接口
-    await callLLM({
-      messages: [userMessage], model: selectedModel?.name, sessionId, apiKey: selectedModel?.apiKey, baseURL: selectedModel?.baseURL,
-    }, (data: string) => {
-      setIsLoading(false)
+    // 通过 HTTP 调用大模型接口
+    try {
+      await callLLM({
+        messages: [userMessage], model: selectedModel?.name, sessionId, apiKey: selectedModel?.apiKey, baseURL: selectedModel?.baseURL, files: uploadedFiles.map((item) => item.name)
+      }, (data: string) => {
+        setIsLoading(false)
+        setMessages(prev => prev.map((item) => item.id === id ? {
+          ...item,
+          content: item.content + data
+        } : item))
+      })
+    } catch (error) {
       setMessages(prev => prev.map((item) => item.id === id ? {
         ...item,
-        content: item.content + data
+        content: JSON.stringify(error.data || 'Unknown error'),
+        isError: true
       } : item))
-    })
+      setIsLoading(false)
+    } finally {
+      // 清空上传文件列表
+      setUploadedFiles([])
+    }
     // 获取最新历史记录
     handleGetSingleHistory(sessionId)
   }
@@ -244,6 +265,46 @@ export default function Home() {
       console.error('Error fetching models:', error)
     }
   }
+  const handleUpload = () => {
+    const formData = new FormData()
+    fileList.forEach((file) => {
+      formData.append('files[]', file as FileType)
+    })
+    setUploading(true)
+    fetch('http://localhost:11435/api/files/upload', {
+      method: 'POST',
+      body: formData
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.code === 200) {
+          setUploadedFiles(prev => [...prev, ...data.data])
+        }
+        setFileList([])
+        messageApi.success('upload successfully.')
+      })
+      .catch(() => {
+        messageApi.error('upload failed.')
+      })
+      .finally(() => {
+        setUploading(false)
+      })
+  }
+
+  const props: UploadProps = {
+    onRemove: (file) => {
+      const index = fileList.indexOf(file)
+      const newFileList = fileList.slice()
+      newFileList.splice(index, 1)
+      setFileList(newFileList)
+    },
+    beforeUpload: (file) => {
+      setFileList([...fileList, file])
+
+      return false
+    },
+    fileList,
+  }
 
   // 初始化获取模型列表
   useEffect(() => {
@@ -288,26 +349,60 @@ export default function Home() {
             <MessageArea messages={messages} isLoading={isLoading}></MessageArea>
           </div>
           {/* 输入区域 - 统一背景框 */}
-          <div className="border-t border-gray-200 bg-white px-4 py-2">
-            <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 space-y-3">
+          <div className="border-t border-gray-200 bg-white px-4 py-3 shadow-sm">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
               <Input.TextArea
                 placeholder="输入消息..."
                 autoSize={{ minRows: 1, maxRows: 4 }}
-                className="border-gray-300"
+                className="border-gray-200 rounded-lg focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
               />
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Upload>
-                    <Button type="text" size="small" className="text-gray-600">
-                      上传
+              {/* 已上传文件列表 */}
+              {uploadedFiles.length > 0 && (<Collapse
+                items={[{
+                  key: '1', label: '已上传文件', children: (<div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      <span>📎</span>
+                      已选择文件 ({uploadedFiles.length})
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {uploadedFiles.map((file, index) => (
+                        <div key={index}>
+                          <FilePreview filename={file.name} url={`http://localhost:11435/files/${file.name}`}></FilePreview>
+                        </div>
+                      ))}
+                    </div>
+                  </div>)
+                }]}
+              />
+              )}
+              {/* 上传操作区域 */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+                <div className="flex flex-wrap items-center gap-2 flex-1">
+                  <Upload {...props}>
+                    <Button
+                      type="default"
+                      size="small"
+                      className="border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-lg transition-all"
+                    >
+                      <span className="mr-1">📎</span>选择文件
                     </Button>
                   </Upload>
+                  <Button
+                    type="primary"
+                    onClick={handleUpload}
+                    disabled={fileList.length === 0}
+                    loading={uploading}
+                    size="small"
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all"
+                  >
+                    {uploading ? '上传中' : '上传'}
+                  </Button>
                   <Select
                     placeholder="选择模型"
                     size="small"
-                    className="w-32"
+                    className="w-40 border-gray-200 rounded-lg flex-1 sm:flex-none"
                     onChange={handleChangeModel}
                     value={selectedModel?.id}
                     options={
@@ -315,7 +410,11 @@ export default function Home() {
                     }
                   />
                 </div>
-                <Button type="primary" className="bg-blue-500 hover:bg-blue-600" onClick={() => handleChatWithModel(message)}>
+                <Button
+                  type="primary"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-all font-medium"
+                  onClick={() => handleChatWithModel(message)}
+                >
                   发送
                 </Button>
               </div>
