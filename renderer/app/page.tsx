@@ -1,6 +1,7 @@
 'use client'
 
 import { Button, Collapse, Input, Select, Space, Upload, UploadFile, UploadProps, message as antdMessage } from "antd"
+import { MenuOutlined, SettingOutlined } from "@ant-design/icons"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { IModelItem } from "../type/model"
@@ -330,17 +331,36 @@ export default function Home() {
     <div className={`h-screen flex flex-col bg-gray-50`}>
       {contextHolder}
       {/* 顶部工具栏 */}
-      <section className="w-full h-14 flex items-center px-4 border-b border-gray-200 bg-white">
-        <Space>
+      <section className="sticky top-0 z-20 w-full h-12 flex items-center justify-between px-6 bg-white/80 backdrop-blur-xl border-b border-gray-100/50 transition-all">
+        {/* Left: History Toggle */}
+        <div className="flex items-center">
           <Button
-            type={showHistory ? "primary" : "default"}
+            type="text"
+            icon={<MenuOutlined className="text-lg" />}
             onClick={() => setShowHistory(!showHistory)}
-            className="border-gray-300"
-          >
-            历史
-          </Button>
-          <Button><Link href={'/setting'}>设置</Link></Button>
-        </Space>
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${showHistory ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}`}
+          />
+        </div>
+
+        {/* Center: Title / Model Name */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+          <div className="flex flex-col items-center">
+            <span className="font-semibold text-gray-800 text-base tracking-tight">
+              {selectedModel?.name || 'Model Hub'}
+            </span>
+          </div>
+        </div>
+
+        {/* Right: Settings */}
+        <div className="flex items-center">
+          <Link href={'/setting'}>
+            <Button
+              type="text"
+              icon={<SettingOutlined className="text-lg" />}
+              className="w-10 h-10 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-700 flex items-center justify-center"
+            />
+          </Link>
+        </div>
       </section>
 
       {/* 主内容区域 */}
@@ -356,19 +376,21 @@ export default function Home() {
             <MessageArea messages={messages} isLoading={isLoading}></MessageArea>
           </div>
           {/* 输入区域 - 统一背景框 */}
-          <div className="border-t border-gray-200 bg-white px-4 py-3 shadow-sm">
-            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+          <div className="px-4 pb-6 bg-transparent">
+            <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl border border-gray-200 p-4 space-y-2 transition-all hover:shadow-2xl duration-300">
               <Input.TextArea
                 placeholder="输入消息..."
-                autoSize={{ minRows: 1, maxRows: 4 }}
-                className="border-gray-200 rounded-lg focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all"
+                autoSize={{ minRows: 1, maxRows: 8 }}
+                className="!border-none !shadow-none !resize-none text-base px-2 focus:!shadow-none"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
               />
+
               {/* 已上传文件列表 */}
               {uploadedFiles.length > 0 && (<Collapse
+                ghost
                 items={[{
-                  key: '1', label: `📎 已上传文件: ${uploadedFiles.length}`, children: (<div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                  key: '1', label: `📎 已上传文件: ${uploadedFiles.length}`, children: (<div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
                     <div className="flex flex-wrap gap-2">
                       {uploadedFiles.map((file, index) => (
                         <div key={index}>
@@ -380,32 +402,38 @@ export default function Home() {
                 }]}
               />
               )}
-              {/* 上传操作区域 */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-                <div className="flex flex-wrap items-center gap-2 flex-1">
+
+              {/* 操作栏 */}
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-50">
+                <div className="flex items-center gap-2">
                   <Upload {...props}>
                     <Button
-                      type="default"
+                      type="text"
                       size="small"
-                      className="border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-lg transition-all"
+                      className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg flex items-center gap-1"
                     >
-                      <span className="mr-1">📎</span>选择文件
+                      <span className="text-lg">📎</span>
                     </Button>
                   </Upload>
+
                   <Button
-                    type="primary"
+                    type="text"
                     onClick={handleUpload}
                     disabled={fileList.length === 0}
                     loading={uploading}
                     size="small"
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all"
+                    className={`rounded-lg transition-all ${fileList.length > 0 ? 'text-blue-600 bg-blue-50' : 'text-gray-300'}`}
                   >
                     {uploading ? '上传中' : '上传'}
                   </Button>
+
+                  <div className="h-4 w-px bg-gray-200 mx-2"></div>
+
                   <Select
                     placeholder="选择模型"
                     size="small"
-                    className="w-40 border-gray-200 rounded-lg flex-1 sm:flex-none"
+                    variant="borderless"
+                    className="min-w-[120px]"
                     onChange={handleChangeModel}
                     value={selectedModel?.id}
                     options={
@@ -413,9 +441,10 @@ export default function Home() {
                     }
                   />
                 </div>
+
                 <Button
                   type="primary"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-all font-medium"
+                  className="bg-black hover:bg-gray-800 text-white px-6 py-1.5 rounded-xl shadow-sm transition-all font-medium"
                   onClick={() => handleChatWithModel(message)}
                 >
                   发送

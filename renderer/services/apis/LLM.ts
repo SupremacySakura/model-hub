@@ -25,18 +25,33 @@ export const callLLM = async (params: ICallLLMParams, onData: (data: string) => 
         return
     }
     const decoder = new TextDecoder('utf-8')
+    let buffer = ''
     while (true) {
         const { value, done } = await reader.read()
         if (done) {
             break
         }
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n\n') // SSE 每条事件以空行分隔
-        for (const line of lines) {
-            const data = line.replace(/^data: /, '')
-            if (data !== '[DONE]' && data.trim() !== '') {
-                onData(data)
+        buffer += decoder.decode(value, { stream: true })
+
+        let sepIndex = buffer.indexOf('\n\n')
+        while (sepIndex !== -1) {
+            const eventChunk = buffer.slice(0, sepIndex)
+            buffer = buffer.slice(sepIndex + 2)
+
+            const lines = eventChunk.split(/\r?\n/)
+            const payload = lines
+                .filter((l) => l.startsWith('data:'))
+                .map((l) => l.replace(/^data:\s?/, ''))
+                .join('\n')
+
+            if (payload === '[DONE]') {
+                // 结束标记
+            } else {
+                // 不做 trim，保留空格和换行，避免 Markdown 断裂
+                onData(payload)
             }
+
+            sepIndex = buffer.indexOf('\n\n')
         }
     }
 }

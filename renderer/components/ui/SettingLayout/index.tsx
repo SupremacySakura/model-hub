@@ -42,7 +42,7 @@ export default function SettingLayout(params: IParams) {
     return (
         <div className="h-full bg-gray-50 p-6 overflow-hidden flex flex-col">
             {isEdit ? (
-                <section className="mx-auto w-full max-w-4xl bg-white rounded-2xl border border-gray-200 shadow-lg p-6 flex flex-col gap-5 h-full">
+                <section className="mx-auto w-full max-w-5xl bg-white rounded-3xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all p-6 flex flex-col gap-6 h-full">
                     <div className="flex flex-wrap items-start justify-between gap-4 flex-shrink-0">
                         <div>
                             <div className="text-xs uppercase tracking-wide text-blue-500">编辑模式</div>
@@ -56,12 +56,12 @@ export default function SettingLayout(params: IParams) {
                             </Button>
                         </div>
                     </div>
-                    <div className="rounded-xl border border-gray-100 overflow-hidden bg-gray-900/95 flex-1 min-h-0">
+                    <div className="rounded-2xl border border-gray-100 overflow-hidden bg-gray-900/95 flex-1 min-h-0">
                         <JsonConfigEditor value={config} onChange={setConfig} />
                     </div>
                 </section>
             ) : (
-                <section className="mx-auto w-full max-w-5xl bg-white rounded-2xl border border-gray-200 shadow-lg p-6 flex flex-col gap-6 h-full">
+                <section className="mx-auto w-full max-w-5xl bg-white rounded-3xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all p-6 flex flex-col gap-6 h-full">
                     <div className="flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
                         <div>
                             <div className="text-xs uppercase tracking-wide text-blue-500">{label}</div>
@@ -76,7 +76,7 @@ export default function SettingLayout(params: IParams) {
                     {MiddleComponent}
 
                     {loading ? (
-                        <div className="rounded-2xl border border-gray-100 bg-gray-50 flex-1 flex items-center justify-center">
+                        <div className="rounded-xl border border-gray-100 bg-gray-50 flex-1 flex items-center justify-center">
                             <Spin />
                         </div>
                     ) : (

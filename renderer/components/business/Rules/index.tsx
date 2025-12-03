@@ -105,12 +105,12 @@ export default function Rules() {
         return (
             <>
                 {/* Add Rule Input */}
-                <div className="flex gap-3 flex-shrink-0">
+                <div className="flex gap-3 items-center flex-shrink-0 bg-white rounded-2xl border border-gray-100 p-3 shadow-sm">
                     <Input
                         value={newRule}
                         onChange={(e) => setNewRule(e.target.value)}
                         placeholder="输入新的规则内容，例如：'请使用中文回答'..."
-                        className="flex-1"
+                        className="flex-1 rounded-xl border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all"
                         size="large"
                         onPressEnter={() => handleAddRule(newRule)}
                         disabled={saving}
@@ -121,14 +121,14 @@ export default function Rules() {
                         icon={<PlusOutlined />}
                         onClick={() => handleAddRule(newRule)}
                         loading={saving}
-                        className="bg-blue-500 hover:bg-blue-600"
+                        className="bg-black hover:bg-gray-800 text-white rounded-xl shadow-sm transition-all"
                     >
                         添加规则
                     </Button>
                 </div>
 
                 {/* Stats */}
-                <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex items-center justify-between text-sm text-gray-500 flex-shrink-0">
+                <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 flex items-center justify-between text-sm text-gray-500 flex-shrink-0">
                     <span>共 {rules.length} 条规则</span>
                 </div>
             </>
@@ -149,17 +149,17 @@ export default function Rules() {
                             {rules.map((rule) => (
                                 <li
                                     key={rule.id}
-                                    className="group flex items-start gap-3 p-4 border border-gray-100 rounded-xl bg-white shadow-sm hover:shadow-md transition-all duration-200"
+                                    className="group flex items-start gap-3 p-4 border border-gray-100 rounded-2xl bg-white shadow-sm hover:shadow-md hover:bg-gray-50/60 transition-all duration-200"
                                 >
                                     <div className="flex-1 pt-1">
-                                        <div className="text-gray-700 leading-relaxed text-base break-all">{rule.content}</div>
+                                        <div className="text-gray-800 leading-relaxed text-sm break-words">{rule.content}</div>
                                     </div>
                                     <Button
                                         type="text"
                                         danger
                                         icon={<DeleteOutlined />}
                                         onClick={() => handleDeleteRule(rule.id)}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-50 rounded-md"
                                     >
                                         删除
                                     </Button>
@@ -171,7 +171,7 @@ export default function Rules() {
             </>
         )
     }
-    
+
     return (
         <SettingLayout label="规则管理" title="大模型回复规则" description="设置全局的系统提示词规则，将应用于所有对话" isEditButtonShow={false} MainComponent={getMainComponent()} MiddleComponent={getMiddleComponent()} loading={loading}></SettingLayout>
     )
