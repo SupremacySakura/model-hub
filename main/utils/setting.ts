@@ -1,9 +1,11 @@
 import { app } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import { safeParseJSON } from './common'
 
 export interface ISettingConfig {
     LLM_CONTEXT_LENGTH: number
+    LLM_MAX_TOOL_ROUNDS?: number
 }
 
 class Setting {
@@ -11,6 +13,7 @@ class Setting {
     private settingConfigPath: string = ''
     private config: ISettingConfig = {
         LLM_CONTEXT_LENGTH: 20,
+        LLM_MAX_TOOL_ROUNDS: 5
     }
     public static getInstance() {
         if (!Setting.instance) {
@@ -40,7 +43,7 @@ class Setting {
             return this.config
         }
         const data = fs.readFileSync(this.settingConfigPath, 'utf-8')
-        const config = JSON.parse(data)
+        const config = safeParseJSON<ISettingConfig>(data)
         return { ...this.config, ...config }
     }
     public saveConfig() {
@@ -50,7 +53,7 @@ class Setting {
         return JSON.stringify(this.config)
     }
     public setSettingConfig(config: string) {
-        this.config = { ...this.config, ...JSON.parse(config) }
+        this.config = { ...this.config, ...safeParseJSON<ISettingConfig>(config) }
         this.saveConfig()
     }
     public loadSettingConfig() {

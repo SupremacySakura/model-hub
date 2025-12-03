@@ -2,12 +2,13 @@ import OpenAI from 'openai'
 import { Stream } from 'openai/streaming'
 import { Message } from '../../renderer/type/message'
 import historyManager from './history'
-import MCPManager from './MCP'
+import MCPManager, { IMCPConfig } from './MCP'
 import { IMCPItem } from '../../renderer/type/MCP'
 import filesManager from './files'
 import settingManager from './setting'
 import rulesManager from './rules'
 import { IRule } from '../../renderer/type/rules'
+import { safeParseJSON } from './common'
 
 /** tool call 类型 */
 type ToolCall = {
@@ -19,6 +20,8 @@ type ToolCall = {
     }
 }
 
+
+
 /**
  * LLM 服务类
  * 负责：
@@ -29,8 +32,9 @@ type ToolCall = {
 export class LLMService {
     private llm: OpenAI
     private model: string
-    private maxToolRounds = 5
     private toolsNameSplitString = '__'
+    private defaultMaxToolRounds = 5
+    private defaultContextLength = 20
 
     constructor(apiKey: string, baseURL: string, model: string) {
         this.llm = new OpenAI({
@@ -119,7 +123,7 @@ export class LLMService {
                 continue
             }
 
-            const args = JSON.parse(call.function.arguments)
+            const args = safeParseJSON<{ [x: string]: unknown }>(call.function.arguments)
 
             try {
                 const res = await mcp.client.callTool({
@@ -138,7 +142,7 @@ export class LLMService {
             } catch (error: any) {
                 console.error(`调用工具失败，尝试重连: ${clientName}`)
 
-                const config = JSON.parse(MCPManager.getConfig())
+                const config = safeParseJSON<IMCPConfig>(MCPManager.getConfig())
                 const newClient = await MCPManager.loadSingleMCP(clientName, config.mcpServers[clientName])
 
                 if (newClient) MCPManager.relinkClient(clientName, newClient)
@@ -201,16 +205,15 @@ export class LLMService {
 
             let round = 0
 
-            while (round < this.maxToolRounds) {
+            while (round < settingManager.loadSettingConfig().LLM_MAX_TOOL_ROUNDS || this.defaultMaxToolRounds) {
                 round++
                 console.error(`🤖 Round ${round}`)
 
                 const stream = await this.llm.chat.completions.create({
                     model: this.model,
-                    messages: conversation.slice(0, settingManager.loadSettingConfig().LLM_CONTEXT_LENGTH) as [],  // 限制上下文长度
+                    messages: conversation.slice(0, settingManager.loadSettingConfig().LLM_CONTEXT_LENGTH || this.defaultContextLength) as [],  // 限制上下文长度
                     stream: true,
-                    tools,
-                    tool_choice: 'auto'
+                    ...(tools?.length ? { tools, tool_choice: 'auto' } : {})
                 })
 
                 const toolCalls = await this.parseToolCallsFromStream(stream, (delta) => {

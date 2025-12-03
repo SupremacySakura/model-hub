@@ -8,4 +8,5 @@ export interface IMCPItem {
     resources: Resource[]
     isError: boolean
     client?: Client
+    errorMessage?: string
 }

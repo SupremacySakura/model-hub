@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Collapse, GetProp, Input, Select, Space, Upload, UploadFile, UploadProps, message as antdMessage } from "antd"
+import { Button, Collapse, Input, Select, Space, Upload, UploadFile, UploadProps, message as antdMessage } from "antd"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { IModelItem } from "../type/model"
@@ -9,8 +9,8 @@ import { loadModels, getAllHistory, getSingleHistory, addHistory, deleteSingleHi
 import MessageArea from "../components/business/MessageArea"
 import HistoryArea from "../components/business/HistoryArea"
 import FilePreview from "../components/ui/FilePreview"
+import { uploadFiles } from "../services/apis/files"
 
-type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0]
 export default function Home() {
   // 存储当前聊天记录
   const [messages, setMessages] = useState<Message[]>([])
@@ -276,30 +276,31 @@ export default function Home() {
       console.error('Error fetching models:', error)
     }
   }
-  const handleUpload = () => {
-    const formData = new FormData()
-    fileList.forEach((file) => {
-      formData.append('files[]', file as FileType)
-    })
+
+  /**
+   * 处理文件上传
+   * 
+   * 
+   * @async
+   * @returns {Promise<void>}
+   */
+  const handleUpload = async () => {
     setUploading(true)
-    fetch('http://localhost:11435/api/files/upload', {
-      method: 'POST',
-      body: formData
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.code === 200) {
-          setUploadedFiles(prev => [...prev, ...data.data])
-        }
-        setFileList([])
-        messageApi.success('upload successfully.')
-      })
-      .catch(() => {
+    try {
+      const data = await uploadFiles(fileList)
+      if (data.code === 200) {
+        setUploadedFiles(prev => [...prev, ...data.data])
+      } else {
         messageApi.error('upload failed.')
-      })
-      .finally(() => {
-        setUploading(false)
-      })
+        return
+      }
+      setFileList([])
+      messageApi.success('upload successfully.')
+    } catch (error) {
+      console.error(error)
+      messageApi.error('upload failed.')
+    }
+    setUploading(false)
   }
 
   const props: UploadProps = {
@@ -367,11 +368,7 @@ export default function Home() {
               {/* 已上传文件列表 */}
               {uploadedFiles.length > 0 && (<Collapse
                 items={[{
-                  key: '1', label: '已上传文件', children: (<div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                    <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      <span>📎</span>
-                      已选择文件 ({uploadedFiles.length})
-                    </div>
+                  key: '1', label: `📎 已上传文件: ${uploadedFiles.length}`, children: (<div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
                     <div className="flex flex-wrap gap-2">
                       {uploadedFiles.map((file, index) => (
                         <div key={index}>

@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { app } from 'electron'
 import { IHistoryItem, Message } from '../../renderer/type/message'
+import { safeParseJSON } from './common'
 
 class HistoryManager {
     private static instance: HistoryManager
@@ -39,7 +40,7 @@ class HistoryManager {
             }
 
             const json = fs.readFileSync(filePath, 'utf8')
-            const data = JSON.parse(json)
+            const data = safeParseJSON<IHistoryItem>(json)
 
             if (!Array.isArray(data.messages)) {
                 data.messages = []
@@ -62,7 +63,7 @@ class HistoryManager {
                 this.add(sessionId)
             }
             const json = fs.readFileSync(filePath, 'utf8')
-            const data = JSON.parse(json)
+            const data = safeParseJSON<IHistoryItem>(json)
             return {
                 sessionId,
                 messages: Array.isArray(data.messages)
@@ -90,7 +91,7 @@ class HistoryManager {
             for (const file of files) {
                 const filePath = path.join(this.historyDir, file)
                 const json = fs.readFileSync(filePath, 'utf8')
-                const data = JSON.parse(json)
+                const data = safeParseJSON<IHistoryItem>(json)
 
                 items.push({
                     sessionId: file.replace('.json', ''),

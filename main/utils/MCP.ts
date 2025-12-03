@@ -5,13 +5,14 @@ import { app } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { IMCPItem } from '../../renderer/type/MCP'
+import { safeParseJSON } from './common'
 
 interface HTTPServerParameters {
     url: string
     headers?: Record<string, string>
 }
 
-interface IMCPConfig {
+export interface IMCPConfig {
     mcpServers: Record<string, StdioServerParameters | HTTPServerParameters>
 }
 
@@ -50,7 +51,7 @@ class MCPManager {
             return
         }
         const json = fs.readFileSync(this.configPath, 'utf-8')
-        this.config = JSON.parse(json)
+        this.config = safeParseJSON<IMCPConfig>(json)
     }
 
     private saveConfig() {
@@ -62,7 +63,7 @@ class MCPManager {
     }
 
     public updateConfig(newConfig: string) {
-        this.config = JSON.parse(newConfig)
+        this.config = safeParseJSON<IMCPConfig>(newConfig)
         this.saveConfig()
         this.dirty = true
     }
@@ -71,7 +72,7 @@ class MCPManager {
         return JSON.stringify(this.config, null, 2)
     }
 
-    public async loadSingleMCP(name: string, config: StdioServerParameters | HTTPServerParameters): Promise<Client | null> {
+    public async loadSingleMCP(name: string, config: StdioServerParameters | HTTPServerParameters): Promise<Client> {
         try {
             const client = new Client({ name, version: '1.0.0' })
 
@@ -89,8 +90,8 @@ class MCPManager {
             await client.connect(transport)
             return client
         } catch (error) {
-            console.error(`加载MCP服务器${name}失败`, error)
-            return null
+            console.error(`加载MCP服务器${name}失败`, JSON.stringify(error.message))
+            throw error
         }
     }
 
@@ -113,12 +114,6 @@ class MCPManager {
             }
             try {
                 const client = await this.loadSingleMCP(name, conf)
-                // 如果没有返回client 则说明加载失败
-                if (!client) {
-                    result.isError = true
-                    mcps.push(result)
-                    continue
-                }
                 // 保存client
                 result.client = client
                 // 加载tools
@@ -145,10 +140,10 @@ class MCPManager {
                 // 保存结果
                 mcps.push(result)
                 this.clientList.push(client)
-            } catch (err) {
+            } catch (error) {
                 // 处理连接错误
-                console.error(`Error connecting to MCP server ${name}:`, err)
                 result.isError = true
+                result.errorMessage = JSON.stringify(error.message)
                 mcps.push(result)
                 continue
             }

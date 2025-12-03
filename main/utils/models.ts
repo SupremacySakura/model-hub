@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { app } from 'electron'
 import { IModelItem } from '../../renderer/type/model'
+import { safeParseJSON } from './common'
 
 interface IModelConfig {
     models: IModelItem[]
@@ -42,7 +43,7 @@ class ModelConfigManager {
         }
         try {
             const json = fs.readFileSync(this.configPath, 'utf-8')
-            const data = JSON.parse(json)
+            const data = safeParseJSON<IModelConfig>(json)
             this.config.models = Array.isArray(data.models) ? data.models : []
         } catch (err) {
             console.error('Error reading models.json:', err)
@@ -65,7 +66,7 @@ class ModelConfigManager {
     /** 更新配置 JSON 字符串 */
     public updateConfig(newConfig: string) {
         try {
-            const parsed = JSON.parse(newConfig)
+            const parsed = safeParseJSON<IModelConfig>(newConfig)
             this.config.models = Array.isArray(parsed.models) ? parsed.models : []
             this.saveConfig()
             this.dirty = true

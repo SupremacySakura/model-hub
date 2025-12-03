@@ -16,7 +16,7 @@ export default function MCP() {
     const [mcps, setMcps] = useState<IMCPItem[]>([])
     // 列表是否加载中
     const [isMCPLoading, setIsMCPLoading] = useState<boolean>(false)
-    
+
     /**
      * 获取MCP配置
      * 
@@ -128,7 +128,7 @@ export default function MCP() {
                                                     <div className="text-sm text-red-600 font-medium">{item.id}</div>
                                                 </div>
                                                 <div className="mt-2 text-sm text-red-500">
-                                                    加载失败，请检查配置
+                                                    加载失败，请检查配置，错误信息：{item?.errorMessage || '未知错误'}
                                                 </div>
                                             </li>
                                         )

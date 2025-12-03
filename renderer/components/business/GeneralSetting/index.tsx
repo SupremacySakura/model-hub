@@ -75,6 +75,12 @@ export default function GeneralSetting() {
                             </div>
                         </div>
                         {/* 可以根据需要添加更多配置项 */}
+                        <div className="space-y-1">
+                            <div className="text-sm text-gray-500">最大工具调用轮数</div>
+                            <div className="text-lg font-semibold text-gray-900">
+                                {settingConfig?.LLM_MAX_TOOL_ROUNDS || 5}
+                            </div>
+                        </div>
                     </div>
 
                     {config && (

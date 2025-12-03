@@ -2,6 +2,7 @@ import { app } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { IRule } from '../../renderer/type/rules'
+import { safeParseJSON } from './common'
 
 export class RuleManager {
     private rules: IRule[] = []
@@ -29,7 +30,7 @@ export class RuleManager {
         const ruleConfigPath = path.join(this.ruleConfigDir, 'rules.json')
         if (fs.existsSync(ruleConfigPath)) {
             const data = fs.readFileSync(ruleConfigPath, 'utf8')
-            this.rules = JSON.parse(data)
+            this.rules = safeParseJSON<IRule[]>(data)
         }
         return this.rules
     }
@@ -37,7 +38,7 @@ export class RuleManager {
         this.rules.push(rule)
         this.saveRule()
     }
-    public deleteRule(ruleId:string) {
+    public deleteRule(ruleId: string) {
         this.rules = this.rules.filter(r => r.id !== ruleId)
         this.saveRule()
     }
