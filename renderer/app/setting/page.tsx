@@ -8,6 +8,7 @@ import Link from 'next/link'
 import MCP from '../../components/business/MCP'
 import Wait from '../../components/ui/Wait'
 import GeneralSetting from '../../components/business/GeneralSetting'
+import Rules from '../../components/business/Rules'
 
 type MenuItem = Required<MenuProps>['items'][number]
 
@@ -45,7 +46,7 @@ const menuMap = {
         component: <MCP></MCP>
     },
     [MenuKey.Rules]: {
-        component: <Wait></Wait>
+        component: <Rules></Rules>
     },
     [MenuKey.Indexing]: {
         component: <Wait></Wait>

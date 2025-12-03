@@ -53,6 +53,15 @@ export default function Home() {
     setSelectedModel(model)
   }
 
+  const scrollToBottom = () => {
+    requestAnimationFrame(() => {
+      const el = messagesRef.current
+      if (el) {
+        el.scrollTop = el.scrollHeight + window.innerHeight * 0.01
+      }
+    })
+  }
+
   /**
    * 与大模型进行流式聊天
    * 
@@ -83,6 +92,7 @@ export default function Home() {
     }
 
     setMessages(prev => [...prev, userMessage])
+    scrollToBottom()
     setMessage("")
     setIsLoading(true)
 
@@ -157,6 +167,7 @@ export default function Home() {
       const data = await getAllHistory()
       if (data.code === 200) {
         setHistories(data.data)
+        scrollToBottom()
         if (isInit && data.data.length !== 0) {
           setSessionId(data.data[0].sessionId)
           setMessages(data.data[0].messages)
@@ -313,14 +324,9 @@ export default function Home() {
     handleGetAllHistory(true)
   }, [])
 
-  useEffect(() => {
-    if (messagesRef.current) {
-      messagesRef.current.scrollTop = messagesRef.current.scrollHeight
-    }
-  }, [messages])
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className={`h-screen flex flex-col bg-gray-50`}>
       {contextHolder}
       {/* 顶部工具栏 */}
       <section className="w-full h-14 flex items-center px-4 border-b border-gray-200 bg-white">
@@ -345,7 +351,7 @@ export default function Home() {
         {/* 主聊天区域 */}
         <main className="flex-1 flex flex-col min-w-0">
           {/* 聊天消息区域 */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-4" ref={messagesRef}>
+          <div className={`flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-4`} ref={messagesRef}>
             <MessageArea messages={messages} isLoading={isLoading}></MessageArea>
           </div>
           {/* 输入区域 - 统一背景框 */}

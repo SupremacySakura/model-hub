@@ -6,6 +6,9 @@ import MCPManager from './MCP'
 import { IMCPItem } from '../../renderer/type/MCP'
 import filesManager from './files'
 import settingManager from './setting'
+import rulesManager from './rules'
+import { IRule } from '../../renderer/type/rules'
+
 /** tool call 类型 */
 type ToolCall = {
     id: string
@@ -185,7 +188,14 @@ export class LLMService {
                     content: `这是用户传递的文件：${filesManager.getFilesContent(files)?.join('\n')}`,
                 })
             }
-
+            // 检查用户是否有添加规则
+            const rules: IRule[] = rulesManager.loadRules() || []
+            if (rules.length > 0) {
+                conversation.push({
+                    role: 'user',
+                    content: `这是用户添加的规则：${rules.map(rule => rule.content).join('\n')}`,
+                })
+            }
             const mcps = await MCPManager.loadAll()
             const tools = mcps.flatMap(mcp => this.convertMCPToolsToOpenAITools(mcp))
 
