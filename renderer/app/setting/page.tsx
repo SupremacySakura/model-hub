@@ -19,15 +19,10 @@ type MenuItem = Required<MenuProps>['items'][number]
  */
 enum MenuKey {
     General = 'General',
-    Agents = 'Agents',
-    Tab = 'Tab',
     Models = 'Models',
     ToolsMcp = 'Tools & MCP',
     Rules = 'Rules and Commands',
-    Indexing = 'Indexing & Docs',
-    Network = 'Network',
     Beta = 'Beta',
-    Docs = 'Docs',
 }
 
 /**
@@ -47,9 +42,6 @@ const menuMap = {
     },
     [MenuKey.Rules]: {
         component: <Rules></Rules>
-    },
-    [MenuKey.Indexing]: {
-        component: <Wait></Wait>
     },
     [MenuKey.Beta]: {
         component: <Wait></Wait>
@@ -88,7 +80,6 @@ const items: MenuItem[] = [
         type: 'group',
         children: [
             { key: MenuKey.Rules, label: '规则' },
-            { key: MenuKey.Indexing, label: '索引' },
             { key: MenuKey.Beta, label: 'Beta' },
         ],
     },

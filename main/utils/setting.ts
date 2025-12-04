@@ -53,7 +53,7 @@ class Setting {
         return JSON.stringify(this.config)
     }
     public setSettingConfig(config: string) {
-        this.config = { ...this.config, ...safeParseJSON<ISettingConfig>(config) }
+        this.config = { ...safeParseJSON<ISettingConfig>(config) }
         this.saveConfig()
     }
     public loadSettingConfig() {

@@ -7,10 +7,10 @@ import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
 import 'highlight.js/styles/github.css'
 import 'katex/dist/katex.min.css'
-
+import classNames from 'classnames'
 export default function MarkdownComponent({ content }: { content: string }) {
   return (
-    <div className="markdown-content break-all">
+    <div className="markdown-content break-words whitespace-pre-wrap">
       <Markdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeHighlight, rehypeKatex]}
@@ -21,13 +21,13 @@ export default function MarkdownComponent({ content }: { content: string }) {
             return !inline && match ? (
               <div className="relative my-4">
                 <pre className="rounded-lg bg-gray-50 border border-gray-200 p-4 overflow-x-auto">
-                  <code className={className} {...props}>
+                  <code className={classNames(className, 'max-w-full whitespace-pre-wrap break-words')} {...props}>
                     {children}
                   </code>
                 </pre>
               </div>
             ) : (
-              <code className="bg-gray-100 text-blue-600 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+              <code className="bg-gray-100 text-blue-600 px-1.5 py-0.5 rounded text-sm font-mono max-w-full whitespace-pre-wrap break-words" {...props}>
                 {children}
               </code>
             )
